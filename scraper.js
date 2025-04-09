@@ -1,15 +1,13 @@
 const express = require('express');
-const path = require('path');
+const cors = require('cors');
 const app = express();
 
-app.use(express.static(path.join(__dirname, '.'))); // Serve static files
+// Allow requests from your web server
+app.use(cors({
+    origin: 'https://mykonosbusmap.com'
+}));
 
-// Serve index_grokScrape.html at root
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index_grokScrape.html'));
-});
-
-// Your existing API route
+app.use(express.static(path.join(__dirname, '.')));
 app.get('/api/timetables', async (req, res) => {
     const timetables = await scrapeTimetables();
     res.json(timetables);
@@ -17,7 +15,6 @@ app.get('/api/timetables', async (req, res) => {
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
-
 
 // Custom delay function
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
