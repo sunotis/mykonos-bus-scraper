@@ -1,30 +1,43 @@
 const express = require('express');
 const cors = require('cors');
+const puppeteer = require('puppeteer');
+const cheerio = require('cheerio');
 const app = express();
 
 app.use(cors({
-    origin: 'https://mykonosbusmap.com', // Specific origin
+    origin: 'https://mykonosbusmap.com',
     methods: ['GET'],
     credentials: false
 }));
+
+async function scrapeTimetables() {
+    try {
+        // Your scraping logic here
+        // Example placeholder:
+        return {
+            "fabrika (mykonos town) - airport": {
+                "lineId": "1559047590770-061945df-35ac",
+                "oldPort": ["09:00", "10:00"],
+                "newPort": ["09:15", "10:15"],
+                "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-airport_01.svg"
+            }
+        };
+    } catch (error) {
+        console.error('Scraping error:', error);
+        return { error: 'Scraping failed' };
+    }
+}
 
 app.get('/', (req, res) => {
     console.log('Root route hit');
     res.send('Mykonos Bus Map API is running!');
 });
 
-app.get('/api/timetables', (req, res) => {
+app.get('/api/timetables', async (req, res) => {
     console.log('API /api/timetables requested');
-    const testData = {
-        "fabrika (mykonos town) - airport": {
-            "lineId": "test",
-            "oldPort": ["09:00"],
-            "newPort": ["09:15"],
-            "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-airport_01.svg"
-        }
-    };
-    console.log('API response:', testData);
-    res.json(testData);
+    const timetables = await scrapeTimetables();
+    console.log('API response:', timetables);
+    res.json(timetables);
 });
 
 const port = process.env.PORT || 3000;
