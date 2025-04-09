@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2JW554H0DE"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        
+        gtag('config', 'G-2JW554H0DE');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>niceMykonos™ Mykonos Bus Map - Routes, Times & Stops 2025</title>
+    <meta name="description" content="Mykonos bus map for 2025 with routes, schedules, and stops. Navigate Mykonos easily with updated timetables from Fabrika, Old Port, and more!">
+    <meta name="keywords" content="Mykonos bus map, Mykonos bus routes, Mykonos bus schedule 2025, Mykonos public transport, Mykonos bus stops, Fabrika bus times, Mykonos beaches transport">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="niceMykonos">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <!-- Open Graph Tags for Social Media -->
+    <meta property="og:title" content="heyMykonos™ Mykonos Bus Map - Routes, Times & Stops 2025">
+    <meta property="og:description" content="Your go-to guide for Mykonos bus routes and timetables. Plan your trip with ease using our detailed 2025 bus map!">
+    <meta property="og:image" content="https://mykonosbusmap.com/images/island_map_bg04_150.jpg">
+    <meta property="og:url" content="https://mykonosbusmap.com">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="niceMykonos™ Mykonos Bus Map - Routes, Times & Stops 2025">
+    <meta name="twitter:description" content="Your go-to guide for Mykonos bus routes and timetables. Plan your trip with ease using our detailed 2025 bus map!">
+    <meta name="twitter:image" content="https://mykonosbusmap.com/images/island_map_bg04_150.jpg">
+
+    <style>
+        * {
+             box-sizing: border-box; 
+            }
+            
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Helvetica Neue, sans-serif;
+            background: transparent;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1042px;
+            margin: 0 auto;
+            position: relative;
+            background: transparent;
+            padding: 0;
+            overflow: visible;
+        }
+
+        .wide-bg {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3464px;
+            min-width: 3464px;
+            height: 1253px;
+            z-index: -1;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .wide-bg img {
+            width: 3464px;
+            height: 1253px;
+            display: block;
+            object-fit: none;
+            object-position: center;
+        }
+
+        @media (min-width: 1500px) { 
+            .wide-bg { 
+                display: block; 
+            } 
+        }
+        .section {
+            width: 100%;
+            position: relative;
+            background: transparent;
+            overflow: visible;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            position: relative;
+            z-index: 2;
+            background: transparent;
+        }
+        
+        .header img {
+            width: 100%;
+            max-width: 1042px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            background: transparent;
+            opacity: 0.8;
+        }
+        
+        .map-placeholder {
+            margin: 0;
+            padding: 0;
+            position: relative;
+            z-index: 1;
+            overflow: visible;
+            width: 100%;
+        }
+        
+        .map-placeholder img {
+            width: 100%;
+            max-width: 1042px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            object-fit: contain;
+            margin-bottom: -100px;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            pointer-events: none;
+            z-index: 10; /* Ensure SVG is on top */
+        }
+        
+        .map-overlay svg {
+            width: 100%;
+            max-width: 1042px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            object-fit: contain;
+            margin-bottom: -100px;
+            pointer-events: all;
+        }
+        
+        .dropdown-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            background: transparent;
+        }
+        
+        .dropdown-container .date-text {
+            text-align: left;
+            color: #575756;
+            font-size: 13px;
+            font-family: Helvetica Neue;
+            font-weight: 300;
+            margin-bottom: 5px;
+            padding-left: 26px;
+            letter-spacing: 0.08em;
+        }
+        
+        .dropdown-container select {
+            width: 100%;
+            max-width: 550px;
+            height: 40px;
+            border: 0px solid #CCC;
+            border-radius: 5px;
+            font-family: Helvetica Neue;
+            font-size: 16px;
+            margin: 0 auto;
+            display: block;
+            padding: 0 30px 0 10px;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.8);
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+            box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .dropdown-container select:hover {
+            border-color: #999;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            box-shadow: 4px 4px 20px rgba(74, 161, 206, 0.15);
+        }
+
+        .dropdown-container select:focus {
+            outline: none;
+            border-color: #4AA1CE;
+            box-shadow: 4px 4px 20px rgba(74, 161, 206, 0.15);
+        }
+
+        .table-container {
+            width: 100%;
+            max-width: 550px;
+            margin: 0 auto 35px auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .table-container table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border: none;
+        }
+
+        .table-container th, .table-container td {
+            width: 50%;
+            height: 40px;
+            color: #878787;
+            font-size: 16px;
+            font-family: Helvetica Neue;
+            font-weight: 500;
+            text-align: center;
+            border: none;
+            padding: 8px;
+            letter-spacing: 0.04em;
+        }
+
+        .table-container th {
+            background: #E5E5E5;
+            color: #575756;
+            height: 50px;
+            font-size: 18px;
+            border: none;
+        }
+
+        .table-container th:first-child {
+            border-top-left-radius: 10px;
+        }
+
+        .table-container th:last-child {
+            border-top-right-radius: 10px;
+        }
+
+        .table-container tr:nth-child(odd) {
+            background: rgba(246, 246, 246, 0.8);
+        }
+
+        .table-container tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15 {
+            stroke-width: 2.86px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15 {
+            fill: none;
+        }
+        .cls-2 { stroke: #009389; }
+        .cls-3 { stroke: #cbbba0; }
+        .cls-4 { stroke: #1c75a9; }
+        .cls-5 { stroke: #b5362d; }
+        .cls-6 { stroke: #802780; }
+        .cls-7 { stroke: #80b33f; }
+        .cls-8 { stroke: #d90080; }
+        .cls-9 { stroke: #dc4136; }
+        .cls-10 { stroke: #9c68c4; }
+        .cls-11 { stroke: #17608a; }
+        .cls-12 { stroke: #8fbace; }
+        .cls-13 { stroke: #2ba373; }
+        .cls-14 { stroke: #e8ac40; }
+        .cls-15 { stroke: #e4811d; }
+        .cls-16 { fill: #231f20; }
+        .cls-17 { fill: #fff; }
+        .hitbox {
+            stroke-width: 20px;
+            opacity: 0;
+            fill: none;
+            stroke-linecap: round;
+            pointer-events: visible;
+        }
+        
+        .hitbox-airport {
+            stroke-width: 15px;
+            opacity: 0;
+            fill: none;
+            stroke-linecap: round;
+            pointer-events: visible;
+        }
+        
+        .hitbox-south {
+            stroke-width: 18px;
+            opacity: 0;
+            fill: none;
+            stroke-linecap: round;
+            pointer-events: visible;
+        }
+        
+        .highlighted {
+            stroke-width: 10px !important;
+        }
+        
+        .route-group polyline {
+            pointer-events: none;
+        }
+        
+        .selected {
+            stroke-width: 10px !important;
+        }
+        
+        .official-link {
+            width: 100%;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .official-link div {
+            color: black;
+            font-size: 15px;
+            font-family: Helvetica Neue;
+            font-weight: 500;
+            word-wrap: break-word;
+            margin: 0 auto 40px auto;
+            max-width: 400px;
+            letter-spacing: 0.05em;
+        }
+
+        .official-link div a {
+            color: black;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .official-link div a:visited {
+            color: black;
+        }
+
+        .official-link div a:hover {
+            color: black;
+            text-decoration: underline;
+        }
+
+        .official-link img {
+            width: 100%;
+            max-width: 344px;
+            height: auto;
+            margin: 0 auto 20px auto;
+            display: block;
+        }
+        
+        .beaches-section .title, .welcome-section .title, .everything-section .title, .ads-section .title, .footer-section .title {
+            width: 100%;
+            max-width: 448px;
+            margin: 0 0 0 12px;
+            text-align: left;
+        }
+
+        .beaches-section .title span, .welcome-section .title span, .everything-section .title span, .ads-section .title span, .footer-section .title span {
+            color: #93CAE6;
+            font-size: 80px;
+            font-family: Helvetica Neue;
+            font-weight: 700;
+            line-height: 62px;
+            word-wrap: break-word;
+        }
+
+        .beaches-section .title span:last-child, .welcome-section .title span:last-child, .everything-section .title span:last-child, .ads-section .title span:last-child, .footer-section .title span:last-child {
+            color: #4AA1CE;
+        }
+
+        .beaches-section img {
+            width: 100%;
+            max-width: 442px;
+            height: auto;
+            display: block;
+            margin: 10px auto 10px auto;
+        }
+
+        .beaches-section img:last-child {
+            margin-bottom: 40px;
+        }
+
+        .everything-section img {
+            width: 100%;
+            max-width: 442px;
+            height: auto;
+            display: block;
+            margin: 10px auto 10px auto;
+        }
+
+        .everything-section img:last-child {
+            margin-bottom: 40px;
+        }
+
+        .ads-section img {
+            width: 100%;
+            max-width: 442px;
+            height: auto;
+            display: block;
+            margin: 10px auto 10px auto;
+        }
+
+        .ads-section img:last-child {
+            margin-bottom: 40px;
+        }
+
+        .welcome-section .content {
+            width: 100%;
+            max-width: 600px;
+            margin: 40px auto 0 auto;
+            padding: 20px 0;
+        }
+
+        .welcome-section .content span:first-child {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 50px;
+            line-height: 50px;
+        }
+
+        .welcome-section .content span {
+            display: block;
+            color: #5F5F5F;
+            font-size: 40px;
+            font-family: Helvetica Neue;
+            font-weight: 500;
+            line-height: 40px;
+            word-wrap: break-word;
+            text-align: left;
+        }
+
+        .welcome-section .content span:nth-child(2) {
+            color: black;
+            font-size: 20px;
+            font-weight: 300;
+            line-height: 20px;
+        }
+
+        .welcome-section .content span:last-child {
+            color: black;
+            font-size: 20px;
+            font-weight: 300;
+            line-height: 25px;
+            letter-spacing: 0.07em;
+        }
+
+        .divider img {
+            width: 100%;
+            max-width: 344px;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .footer-section {
+            margin: 40px 0 80px 0;
+            text-align: center;
+        }
+
+        .footer-section .title {
+            margin: 0 auto;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0px;
+        }
+
+        .footer-section .title a {
+            text-decoration: none;
+            display: inline-block;
+            padding: 5px;
+            min-width: 200px;
+            font-size: 50px;
+            font-family: Helvetica Neue;
+            font-weight: 700;
+            line-height: 50px;
+            word-wrap: break-word;
+        }
+
+        .footer-section .title a:first-child {
+            color: #93CAE6;
+        }
+
+        .footer-section .title a:last-child {
+            color: #4AA1CE;
+        }
+        /* Media Queries for Mobile */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0;
+            }
+
+            .section {
+                margin: 0;
+            }
+
+            .map-placeholder {
+                margin: 0 0 0 0;
+            }
+
+            .map-placeholder img {
+                height: auto;
+                margin-bottom: -60px;
+            }
+
+            .header img {
+                margin: 0 auto;
+            }
+
+            .dropdown-container {
+                margin: 0 auto;
+            }
+
+            .table-container {
+                margin: 0 auto 20px auto;
+            }
+
+            .beaches-section .title span, .welcome-section .title span, .everything-section .title span, .ads-section .title span {
+                font-size: 60px;
+                line-height: 48px;
+            }
+
+            .footer-section .title a {
+                font-size: 40px;
+                line-height: 40px;
+            }
+
+            .welcome-section .content {
+                padding: 20px 20px;
+            }
+            
+            .welcome-section .content span:first-child {
+                font-size: 30px;
+                line-height: 30px;
+            }
+
+            .welcome-section .content span:last-child {
+                font-size: 16px;
+                line-height: 20px;
+                letter-spacing: 0.03em;
+            }
+
+            .dropdown-container .label div {
+                font-size: 16px;
+            }
+
+            .dropdown-container select {
+                max-width: 500px;
+                font-size: 14px;
+            }
+
+            .table-container {
+                max-width: 95%;
+            }
+
+            .table-container th, .table-container td {
+                height: 35px;
+                font-size: 14px;
+            }
+
+            .table-container th {
+                height: 45px;
+                font-size: 16px;
+            }
+
+            .official-link div {
+                font-size: 12px;
+                max-width: 350px;
+            }
+
+            .footer-section {
+                margin: 40px 0 120px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0;
+            }
+
+            .section {
+                margin: 0;
+            }
+
+            .map-placeholder {
+                margin: 0 0 0 0;
+            }
+
+            .map-placeholder img {
+                height: auto;
+                margin-bottom: -60px;
+            }
+
+            .header img {
+                margin: 0 auto;
+            }
+
+            .dropdown-container {
+                margin: 0 auto;
+            }
+
+            .table-container {
+                margin: 0 auto 30px auto;
+            }
+
+            .beaches-section .title span, .welcome-section .title span, .everything-section .title span, .ads-section .title span {
+                font-size: 40px;
+                line-height: 32px;
+            }
+
+            .footer-section .title a {
+                font-size: 30px;
+                line-height: 30px;
+            }
+
+            .welcome-section .content {
+                padding: 20px 20px;
+            }
+            
+            .welcome-section .content span:first-child {
+                font-size: 24px;
+                line-height: 24px;
+            }
+
+            .welcome-section .content span:last-child {
+                font-size: 14px;
+                line-height: 18px;
+                letter-spacing: 0.03em;
+            }
+
+            .dropdown-container .label div {
+                font-size: 14px;
+            }
+
+            .dropdown-container select {
+                max-width: 400px;
+                font-size: 12px;
+            }
+
+            .table-container th, .table-container td {
+                height: 30px;
+                font-size: 12px;
+            }
+
+            .table-container th {
+                height: 40px;
+                font-size: 14px;
+            }
+
+            .official-link div {
+                font-size: 10px;
+                max-width: 300px;
+            }
+
+            .footer-section {
+                margin: 40px 0 120px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="wide-bg">
+            <img src="https://mykonosbusmap.com/images/island_map_bg04_wide.jpg" alt="Wide Background Map">
+        </div>
+        <div class="section map-placeholder">
+            <img style="max-width: 1042px;" src="https://mykonosbusmap.com/images/island_map_bg051-38.jpg" alt="Bus Route Map">
+            <div class="map-overlay">
+                <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1042.41 1253.69">
+                    <rect class="cls-1" x="-.41" width="1042.82" height="1253.69"/>
+                    <!-- Hitbox Groups -->
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - Airport">
+                        <polyline class="hitbox-airport" points="319.99 773.5 236.63 773.5"/>
+                        <polyline class="hitbox-airport" points="236.63 773.5 236.63 706.08"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Airport - New Port">
+                        <polyline class="hitbox-airport" points="319.84 778.19 292.15 778.19"/>
+                        <polyline class="hitbox-airport" points="292.15 778.19 292.15 530.93"/>
+                        <polyline class="hitbox-airport" points="292.15 530.93 254.39 530.93"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Old Port (Mykonos Town) - Kalafatis">
+                        <polyline class="hitbox" points="276.76 647.8 276.76 680.86"/>
+                        <polyline class="hitbox" points="276.76 680.86 343 680.86"/>
+                        <polyline class="hitbox" points="343 680.86 343 640.44"/>
+                        <polyline class="hitbox" points="343 640.44 581.97 640.44"/>
+                        <polyline class="hitbox" points="581.97 640.44 581.97 657.57"/>
+                        <polyline class="hitbox" points="581.97 657.57 620.74 657.57"/>
+                        <polyline class="hitbox" points="620.74 657.57 620.74 740.53"/>
+                        <polyline class="hitbox" points="620.74 740.53 725.12 740.53"/>
+                        <polyline class="hitbox" points="725.12 740.53 725.12 700.45"/>
+                        <polyline class="hitbox" points="725.12 700.45 747.62 700.45"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Old Port (Mykonos Town) - Ano Mera">
+                        <polyline class="hitbox" points="276.76 647.8 276.76 680.86"/>
+                        <polyline class="hitbox" points="276.76 680.86 343 680.86"/>
+                        <polyline class="hitbox" points="343 680.86 343 640.44"/>
+                        <polyline class="hitbox" points="343 640.44 581.97 640.44"/>
+                        <polyline class="hitbox" points="581.97 640.44 581.97 657.57"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Old Port (Mykonos Town) - Agios Stefanos - New Port">
+                        <polyline class="hitbox" points="245.37 633.08 245.37 517.58"/>
+                        <polyline class="hitbox" points="245.37 517.58 229.9 517.58"/>
+                        <polyline class="hitbox" points="229.9 517.58 229.9 507.07"/>
+                        <polyline class="hitbox" points="229.9 507.07 168.9 507.07"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - New Port">
+                        <polyline class="hitbox" points="238.31 538.06 238.31 562.73"/>
+                        <polyline class="hitbox" points="238.31 562.73 287.07 562.52"/>
+                        <polyline class="hitbox" points="287.07 562.52 287.07 699.12"/>
+                        <polyline class="hitbox" points="287.07 699.12 262.68 698.71"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Old Port (Mykonos Town) - New Port">
+                        <polyline class="hitbox" points="233.19 538.06 233.19 567.86"/>
+                        <polyline class="hitbox" points="233.19 567.86 250.56 567.65"/>
+                        <polyline class="hitbox" points="250.56 567.65 250.56 633.08"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Old Port (Mykonos Town) - Elia">
+                        <polyline class="hitbox" points="271.72 647.8 271.72 708.8"/>
+                        <polyline class="hitbox" points="271.72 708.8 271.72 810.84"/>
+                        <polyline class="hitbox" points="271.72 810.84 570.73 810.84"/>
+                        <polyline class="hitbox" points="570.73 810.84 570.73 835.17"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Old Port (Mykonos Town) - Paradise">
+                        <polyline class="hitbox" points="266.68 647.8 266.68 815.99"/>
+                        <polyline class="hitbox" points="266.68 815.99 429.41 815.99"/>
+                        <polyline class="hitbox" points="429.41 815.99 429.41 951.83"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - Ornos - Agios Ioannis">
+                        <polyline class="hitbox" points="231.9 706.08 231.9 839.68"/>
+                        <polyline class="hitbox" points="231.9 839.68 123.98 839.68"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - Paradise">
+                        <polyline class="hitbox-south" points="241.5 706.08 241.5 826.25"/>
+                        <polyline class="hitbox-south" points="241.5 826.25 424.08 826.25"/>
+                        <polyline class="hitbox-south" points="424.08 826.25 424.08 951.83"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - Paraga">
+                        <polyline class="hitbox-south" points="246.45 706.08 246.45 851.13"/>
+                        <polyline class="hitbox-south" points="246.45 851.13 358.22 851.13"/>
+                        <polyline class="hitbox-south" points="358.22 851.13 358.22 940.11"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - Platis Gialos">
+                        <polyline class="hitbox-south" points="251.48 706.08 251.48 856.96"/>
+                        <polyline class="hitbox-south" points="251.48 856.96 336.38 856.96"/>
+                        <polyline class="hitbox-south" points="336.38 856.96 336.38 907.49"/>
+                    </g>
+                    <g class="hitbox-group" data-route="Fabrika (Mykonos Town) - Super Paradise">
+                        <polyline class="hitbox-south" points="256.46 705.98 256.46 821.12"/>
+                        <polyline class="hitbox-south" points="256.46 821.12 493.97 821.12"/>
+                        <polyline class="hitbox-south" points="493.97 821.12 493.97 907.06"/>
+                    </g>
+                    <!-- Visible Polyline Groups -->
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - Airport">
+                        <polyline id="fabrika-to-airport-1" class="cls-11" points="319.99 773.5 236.63 773.5"/>
+                        <polyline id="fabrika-to-airport-2" class="cls-11" points="236.63 773.5 236.63 706.08"/>
+                    </g>
+                    <g class="route-group" data-route="Airport - New Port">
+                        <polyline id="airport-to-newport-1" class="cls-4" points="319.84 778.19 292.15 778.19"/>
+                        <polyline id="airport-to-newport-2" class="cls-4" points="292.15 778.19 292.15 530.93"/>
+                        <polyline id="airport-to-newport-3" class="cls-4" points="292.15 530.93 254.39 530.93"/>
+                    </g>
+                    <g class="route-group" data-route="Old Port (Mykonos Town) - Kalafatis">
+                        <polyline id="oldport-to-kalafatis-1" class="cls-2" points="276.76 647.8 276.76 680.86"/>
+                        <polyline id="oldport-to-kalafatis-2" class="cls-2" points="276.76 680.86 343 680.86"/>
+                        <polyline id="oldport-to-kalafatis-3" class="cls-2" points="343 680.86 343 640.44"/>
+                        <polyline id="oldport-to-kalafatis-4" class="cls-2" points="343 640.44 581.97 640.44"/>
+                        <polyline id="oldport-to-kalafatis-5" class="cls-2" points="581.97 640.44 581.97 657.57"/>
+                        <polyline id="oldport-to-kalafatis-6" class="cls-2" points="581.97 657.57 620.74 657.57"/>
+                        <polyline id="oldport-to-kalafatis-7" class="cls-2" points="620.74 657.57 620.74 740.53"/>
+                        <polyline id="oldport-to-kalafatis-8" class="cls-2" points="620.74 740.53 725.12 740.53"/>
+                        <polyline id="oldport-to-kalafatis-9" class="cls-2" points="725.12 740.53 725.12 700.45"/>
+                        <polyline id="oldport-to-kalafatis-10" class="cls-2" points="725.12 700.45 747.62 700.45"/>
+                    </g>
+                    <g class="route-group" data-route="Old Port (Mykonos Town) - Ano Mera">
+                        <polyline id="oldport-to-anomera-1" class="cls-13" points="276.76 647.8 276.76 680.86"/>
+                        <polyline id="oldport-to-anomera-2" class="cls-13" points="276.76 680.86 343 680.86"/>
+                        <polyline id="oldport-to-anomera-3" class="cls-13" points="343 680.86 343 640.44"/>
+                        <polyline id="oldport-to-anomera-4" class="cls-13" points="343 640.44 581.97 640.44"/>
+                        <polyline id="oldport-to-anomera-5" class="cls-13" points="581.97 640.44 581.97 657.57"/>
+                    </g>
+                    <g class="route-group" data-route="Old Port (Mykonos Town) - Agios Stefanos - New Port">
+                        <polyline id="oldport-to-agiosstefanos-newport-1" class="cls-14" points="245.37 633.08 245.37 517.58"/>
+                        <polyline id="oldport-to-agiosstefanos-newport-2" class="cls-14" points="245.37 517.58 229.9 517.58"/>
+                        <polyline id="oldport-to-agiosstefanos-newport-3" class="cls-14" points="229.9 517.58 229.9 507.07"/>
+                        <polyline id="oldport-to-agiosstefanos-newport-4" class="cls-14" points="229.9 507.07 168.9 507.07"/>
+                    </g>
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - New Port">
+                        <polyline id="fabrika-to-newport-1" class="cls-9" points="238.31 538.06 238.31 562.73"/>
+                        <polyline id="fabrika-to-newport-2" class="cls-9" points="238.31 562.73 287.07 562.52"/>
+                        <polyline id="fabrika-to-newport-3" class="cls-9" points="287.07 562.52 287.07 699.12"/>
+                        <polyline id="fabrika-to-newport-4" class="cls-9" points="287.07 699.12 262.68 698.71"/>
+                    </g>
+                    <g class="route-group" data-route="Old Port (Mykonos Town) - New Port">
+                        <polyline id="oldport-to-newport-1" class="cls-5" points="233.19 538.06 233.19 567.86"/>
+                        <polyline id="oldport-to-newport-2" class="cls-5" points="233.19 567.86 250.56 567.65"/>
+                        <polyline id="oldport-to-newport-3" class="cls-5" points="250.56 567.65 250.56 633.08"/>
+                    </g>
+                    <g class="route-group" data-route="Old Port (Mykonos Town) - Elia">
+                        <polyline id="oldport-to-elia-1" class="cls-10" points="271.72 647.8 271.72 708.8"/>
+                        <polyline id="oldport-to-elia-2" class="cls-10" points="271.72 708.8 271.72 810.84"/>
+                        <polyline id="oldport-to-elia-3" class="cls-10" points="271.72 810.84 570.73 810.84"/>
+                        <polyline id="oldport-to-elia-4" class="cls-10" points="570.73 810.84 570.73 835.17"/>
+                    </g>
+                    <g class="route-group" data-route="Old Port (Mykonos Town) - Paradise">
+                        <polyline id="oldport-to-paradise-1" class="cls-8" points="266.68 647.8 266.68 815.99"/>
+                        <polyline id="oldport-to-paradise-2" class="cls-8" points="266.68 815.99 429.41 815.99"/>
+                        <polyline id="oldport-to-paradise-3" class="cls-8" points="429.41 815.99 429.41 951.83"/>
+                    </g>
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - Paradise">
+                        <polyline id="fabrika-to-paradise-1" class="cls-15" points="241.5 706.08 241.5 826.25"/>
+                        <polyline id="fabrika-to-paradise-2" class="cls-15" points="241.5 826.25 424.08 826.25"/>
+                        <polyline id="fabrika-to-paradise-3" class="cls-15" points="424.08 826.25 424.08 951.83"/>
+                    </g>
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - Paraga">
+                        <polyline id="fabrika-to-paraga-1" class="cls-7" points="246.45 706.08 246.45 851.13"/>
+                        <polyline id="fabrika-to-paraga-2" class="cls-7" points="246.45 851.13 358.22 851.13"/>
+                        <polyline id="fabrika-to-paraga-3" class="cls-7" points="358.22 851.13 358.22 940.11"/>
+                    </g>
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - Platis Gialos">
+                        <polyline id="fabrika-to-platisgialos-1" class="cls-3" points="251.48 706.08 251.48 856.96"/>
+                        <polyline id="fabrika-to-platisgialos-2" class="cls-3" points="251.48 856.96 336.38 856.96"/>
+                        <polyline id="fabrika-to-platisgialos-3" class="cls-3" points="336.38 856.96 336.38 907.49"/>
+                    </g>
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - Ornos - Agios Ioannis">
+                        <polyline id="fabrika-to-ornos-agiosioannis-1" class="cls-6" points="231.9 706.08 231.9 839.68"/>
+                        <polyline id="fabrika-to-ornos-agiosioannis-2" class="cls-6" points="231.9 839.68 123.98 839.68"/>
+                    </g>
+                    <g class="route-group" data-route="Fabrika (Mykonos Town) - Super Paradise">
+                        <polyline id="fabrika-to-superparadise-1" class="cls-12" points="256.46 705.98 256.46 821.12"/>
+                        <polyline id="fabrika-to-superparadise-2" class="cls-12" points="256.46 821.12 493.97 821.12"/>
+                        <polyline id="fabrika-to-superparadise-3" class="cls-12" points="493.97 821.12 493.97 907.06"/>
+                    </g>
+                    <!-- Stop markers -->
+                    <path id="oldport" class="cls-17" d="M240.32,647.8c-4.06,0-7.36-3.3-7.36-7.36s3.3-7.36,7.36-7.36h36.44c4.06,0,7.36,3.3,7.36,7.36s-3.3,7.36-7.36,7.36h-36.44Z"/>
+                    <path class="cls-16" d="M276.76,649.05h-36.44c-4.75,0-8.61-3.86-8.61-8.61s3.86-8.62,8.61-8.62h36.44c4.75,0,8.62,3.86,8.62,8.62s-3.86,8.61-8.62,8.61ZM240.32,634.33c-3.37,0-6.1,2.74-6.1,6.11s2.74,6.1,6.1,6.1h36.44c3.37,0,6.11-2.74,6.11-6.1s-2.74-6.11-6.11-6.11h-36.44Z"/>
+                    <path id="fabrika" class="cls-17" d="M233,706.08c-4.06,0-7.36-3.3-7.36-7.36s3.3-7.36,7.36-7.36h22.32c4.06,0,7.36,3.3,7.36,7.36s-3.3,7.36-7.36,7.36h-22.32Z"/>
+                    <path class="cls-16" d="M255.32,707.33h-22.32c-4.75,0-8.61-3.86-8.61-8.62s3.86-8.61,8.61-8.61h22.32c4.75,0,8.62,3.86,8.62,8.61s-3.86,8.62-8.62,8.62ZM233,692.62c-3.37,0-6.1,2.74-6.1,6.1s2.74,6.11,6.1,6.11h22.32c3.37,0,6.11-2.74,6.11-6.11s-2.74-6.1-6.11-6.1h-22.32Z"/>
+                    <path id="airport" class="cls-17" d="M326.89,783.42c-4.06,0-7.36-3.3-7.36-7.36s3.3-7.36,7.36-7.36h22.32c4.06,0,7.36,3.3,7.36,7.36s-3.3,7.36-7.36,7.36h-22.32Z"/>
+                    <path class="cls-16" d="M349.21,784.67h-22.32c-4.75,0-8.61-3.86-8.61-8.62s3.86-8.61,8.61-8.61h22.32c4.75,0,8.61,3.86,8.61,8.61s-3.86,8.62-8.61,8.62ZM326.89,769.96c-3.37,0-6.1,2.74-6.1,6.1s2.74,6.11,6.1,6.11h22.32c3.37,0,6.1-2.74,6.1-6.11s-2.74-6.1-6.1-6.1h-22.32Z"/>
+                    <path id="newport" class="cls-17" d="M220.68,538.06c-4.06,0-7.36-3.3-7.36-7.36s3.3-7.36,7.36-7.36h26.35c4.06,0,7.36,3.3,7.36,7.36s-3.3,7.36-7.36,7.36h-26.35Z"/>
+                    <path class="cls-16" d="M247.03,539.31h-26.35c-4.75,0-8.62-3.86-8.62-8.61s3.86-8.62,8.62-8.62h26.35c4.75,0,8.62,3.86,8.62,8.62s-3.86,8.61-8.62,8.61ZM220.68,524.59c-3.37,0-6.11,2.74-6.11,6.11s2.74,6.1,6.11,6.1h26.35c3.37,0,6.11-2.74,6.11-6.1s-2.74-6.11-6.11-6.11h-26.35Z"/>
+                </svg>
+            </div>
+        </div>
+        <div class="section dropdown-container">
+            <div class="date-text">from June 2025</div>
+            <select id="busLine" onchange="updateTable()">
+                <option value="Fabrika (Mykonos Town) - Airport">Fabrika (Mykonos Town) - Airport</option>
+                <option value="Airport - New Port">Airport - New Port</option>
+                <option value="Fabrika (Mykonos Town) - New Port">Fabrika (Mykonos Town) - New Port</option>
+                <option value="Old Port (Mykonos Town) - New Port">Old Port (Mykonos Town) - New Port</option>
+                <option value="Fabrika (Mykonos Town) - Platis Gialos">Fabrika (Mykonos Town) - Platis Gialos</option>
+                <option value="Fabrika (Mykonos Town) - Paradise">Fabrika (Mykonos Town) - Paradise</option>
+                <option value="Fabrika (Mykonos Town) - Super Paradise">Fabrika (Mykonos Town) - Super Paradise</option>
+                <option value="Fabrika (Mykonos Town) - Paraga">Fabrika (Mykonos Town) - Paraga</option>
+                <option value="Old Port (Mykonos Town) - Elia">Old Port (Mykonos Town) - Elia</option>
+                <option value="Old Port (Mykonos Town) - Ano Mera">Old Port (Mykonos Town) - Ano Mera</option>
+                <option value="Old Port (Mykonos Town) - Paradise">Old Port (Mykonos Town) - Paradise</option>
+                <option value="Old Port (Mykonos Town) - Kalafatis">Old Port (Mykonos Town) - Kalafatis</option>
+                <option value="Fabrika (Mykonos Town) - Ornos - Agios Ioannis">Fabrika (Mykonos Town) - Ornos - Agios Ioannis</option>
+                <option value="Old Port (Mykonos Town) - Agios Stefanos - New Port">Old Port (Mykonos Town) - Agios Stefanos - New Port</option>
+            </select>
+        </div>
+        
+        <div class="section header">
+            <img style="max-width: 1042px;" src="https://placehold.co/313x66" alt="Header Logo">
+        </div>
+
+        <div class="section table-container">
+            <table id="busTimes">
+            </table>
+        </div>
+
+        <div class="section official-link">
+            <div>Check the official bus timetables at<br/><a href="https://mykonosbus.com/bus-timetables/" target="_blank">https://mykonosbus.com/bus-timetables/</a></div>
+            <img src="https://mykonosbusmap.com/images/separator_wave_01.png" alt="Divider">
+        </div>
+
+        <div class="section beaches-section">
+            <div class="title">
+                <span>nicest<br/></span>
+                <span>Beaches</span>
+            </div>
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/photos/mykonos_beach01_2000.jpg" alt="Beach">
+        </div>
+
+        <div class="section divider">
+            <img src="https://mykonosbusmap.com/images/separator_wave_01.png" alt="Divider">
+        </div>
+
+        <div class="section everything-section">
+            <div class="title">
+                <span>nicest<br/></span>
+                <span>Everything</span>
+            </div>
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/photos/mykonos_everything01_2000.jpg" alt="Everything 1">
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/photos/mykonos_everything02_2000.jpg" alt="Everything 2">
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/photos/mykonos_everything03_2000.jpg" alt="Everything 3">
+        </div>
+
+        <div class="section divider">
+            <img src="https://mykonosbusmap.com/images/separator_wave_01.png" alt="Divider">
+        </div>
+
+        <div class="section ads-section">
+            <div class="title">
+                <span>nicest<br/></span>
+                <span>Ads</span>
+            </div>
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/ads/mykonos_ads01.jpg" alt="Ad 1">
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/ads/mykonos_ads02.jpg" alt="Ad 2">
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/ads/mykonos_ads03.jpg" alt="Ad 3">
+            <img style="max-width: 1042px; height: auto;" src="https://mykonosbusmap.com/ads/mykonos_ads04.jpg" alt="Ad 4">
+        </div>
+
+        <div class="section divider">
+            <img src="https://mykonosbusmap.com/images/separator_wave_01.png" alt="Divider">
+        </div>
+
+        <div class="section welcome-section">
+            <div class="content">
+                <span>Welcome to the<br/>"Mykonos Bus Lines Map".<br/></span>
+                <span><br/></span>
+                <span>
+                    I created this resource to provide comprehensive information about public bus routes on the island of Mykonos.<br><br>
+                    Although I'm not a native of Mykonos and don't speak Greek. I recognized the need for a clear, concise, and user-friendly bus map. My goal is to offer a compact yet informative guide that's easy to understand.<br><br>
+                    The map currently shows major stops, but I aim to include all intermediate stops in future updates. I've compiled this information from my personal experiences on the island and the official bus company website.<br><br>
+                    I strive for accuracy, but if you notice any errors or have suggestions for improvement, please email me at mykonosbusmap@gmail.com. Your feedback is crucial in enhancing the map's precision and usefulness.<br><br>
+                    This map is freely available for public use without any attribution requirements.<br><br>
+                    Given the map's growing popularity, I'm open to displaying high-quality advertisements that align with the website's aesthetic. These ads will be clearly marked as "Paid Advertisement" and seamlessly integrated into the site's design. If you're interested in advertising, please contact me for more information.
+                </span>
+            </div>
+        </div>
+
+        <div class="section footer-section">
+            <div class="title">
+                <a href="contact.html">contact<br/></a>
+                <a href="privacy.html">privacy policy</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add these elements just before the <script> section -->
+<div id="loading" style="display: none; text-align: center; padding: 10px; background: #f0f0f0;">
+    Loading timetables...
+</div>
+<p style="text-align: center; font-size: 0.9em;">
+    Timetable data provided by <a href="https://mykonosbus.com" target="_blank">Mykonos Bus</a>.
+</p>
+
+<!-- Replace your entire old <script> section with this -->
+    <script>
+        let times = {};
+    
+        async function fetchTimetables() {
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const response = await fetch('/api/timetables');
+                times = await response.json();
+                console.log('Fetched times:', times);
+                localStorage.setItem('timetables', JSON.stringify(times));
+                populateDropdown();
+                updateTable();
+            } catch (error) {
+                console.error('Error fetching timetables:', error);
+                updateTable();
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+    
+        function populateDropdown() {
+            const busLine = document.getElementById('busLine');
+            busLine.innerHTML = ''; // Clear existing options
+            Object.keys(times).forEach(route => {
+                const option = document.createElement('option');
+                option.value = route;
+                option.textContent = route.charAt(0).toUpperCase() + route.slice(1); // Capitalize for display
+                busLine.appendChild(option);
+            });
+        }
+    
+        function updateTable() {
+            const busLine = document.getElementById('busLine').value;
+            const table = document.getElementById('busTimes');
+            const headerImage = document.querySelector('.header img');
+            const selectedRoute = times[busLine];
+            const svg = document.querySelector('.map-overlay svg');
+    
+            const allRouteGroups = document.querySelectorAll('.route-group');
+            allRouteGroups.forEach(group => {
+                const polylines = group.querySelectorAll('polyline');
+                polylines.forEach(polyline => polyline.classList.remove('selected'));
+            });
+    
+            const routeGroup = document.querySelector(`.route-group[data-route="${busLine}"]`);
+            if (routeGroup) {
+                const polylines = routeGroup.querySelectorAll('polyline');
+                polylines.forEach(polyline => polyline.classList.add('selected'));
+                const lastRouteGroup = allRouteGroups[allRouteGroups.length - 1];
+                const firstStopMarker = svg.querySelector('path#oldport');
+                if (lastRouteGroup !== routeGroup) svg.insertBefore(routeGroup, firstStopMarker);
+            }
+    
+            if (!selectedRoute) {
+                headerImage.src = `https://placehold.co/313x66?text=${encodeURIComponent(busLine)}`;
+                while (table.rows.length > 0) table.deleteRow(0);
+                const row = table.insertRow();
+                row.insertCell().textContent = "No timetable available";
+                row.cells[0].style.width = '100%';
+                return;
+            }
+    
+            headerImage.src = selectedRoute.headerImage || `https://placehold.co/313x66?text=${encodeURIComponent(busLine)}`;
+    
+            while (table.rows.length > 0) table.deleteRow(0);
+    
+            if (selectedRoute.hasMiddleStop) {
+                for (let i = 0; i < selectedRoute.oldPort.length; i++) {
+                    const row = table.insertRow();
+                    row.insertCell().textContent = selectedRoute.oldPort[i];
+                    row.insertCell().textContent = selectedRoute.midPort[i];
+                    row.insertCell().textContent = selectedRoute.newPort[i];
+                    row.cells[0].style.width = '33.33%';
+                    row.cells[1].style.width = '33.33%';
+                    row.cells[2].style.width = '33.33%';
+                }
+            } else {
+                for (let i = 0; i < selectedRoute.oldPort.length; i++) {
+                    const row = table.insertRow();
+                    row.insertCell().textContent = selectedRoute.oldPort[i];
+                    row.insertCell().textContent = selectedRoute.newPort[i];
+                    row.cells[0].style.width = '50%';
+                    row.cells[1].style.width = '50%';
+                }
+            }
+    
+            const idRow = table.insertRow();
+            idRow.insertCell().textContent = `Line ID: ${selectedRoute.lineId}`;
+            idRow.cells[0].style.width = '100%';
+            idRow.cells[0].style.fontStyle = 'italic';
+            idRow.cells[0].style.color = '#666';
+        }
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            const hitboxGroups = document.querySelectorAll('.hitbox-group');
+            let currentlyHighlighted = null;
+    
+            hitboxGroups.forEach(hitboxGroup => {
+                hitboxGroup.addEventListener('mouseover', (e) => {
+                    e.stopPropagation();
+                    const route = hitboxGroup.getAttribute('data-route');
+                    const routeGroup = document.querySelector(`.route-group[data-route="${route}"]`);
+                    if (routeGroup) {
+                        const polylines = routeGroup.querySelectorAll('polyline');
+                        polylines.forEach(polyline => polyline.classList.add('highlighted'));
+                        currentlyHighlighted = routeGroup;
+                    }
+                });
+    
+                hitboxGroup.addEventListener('mouseout', (e) => {
+                    e.stopPropagation();
+                    if (currentlyHighlighted) {
+                        const polylines = currentlyHighlighted.querySelectorAll('polyline');
+                        polylines.forEach(polyline => polyline.classList.remove('highlighted'));
+                        currentlyHighlighted = null;
+                    }
+                });
+    
+                hitboxGroup.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const route = hitboxGroup.getAttribute('data-route');
+                    const busLineSelect = document.getElementById('busLine');
+                    busLineSelect.value = route;
+                    updateTable();
+                });
+            });
+    
+            fetchTimetables();
+            setInterval(fetchTimetables, 24 * 60 * 60 * 1000);
+        });
+    </script>
