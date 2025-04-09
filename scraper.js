@@ -1,15 +1,17 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // Add this line
+const path = require('path');
+const puppeteer = require('puppeteer');
+const cheerio = require('cheerio');
 const app = express();
 
-app.use(cors({
-    origin: 'https://mykonosbusmap.com'
-}));
-
+app.use(cors({ origin: 'https://mykonosbusmap.com' }));
 app.use(express.static(path.join(__dirname, '.')));
+
 app.get('/api/timetables', async (req, res) => {
+    console.log('API /api/timetables requested');
     const timetables = await scrapeTimetables();
+    console.log('API response:', timetables);
     res.json(timetables);
 });
 
