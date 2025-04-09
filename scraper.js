@@ -1,22 +1,16 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
-const puppeteer = require('puppeteer');
-const cheerio = require('cheerio');
 const app = express();
 
 app.use(cors({ origin: 'https://mykonosbusmap.com' }));
-// Remove static files unless you have a 'public' folder
-// app.use(express.static(path.join(__dirname, '.')));
 
 app.get('/', (req, res) => {
     console.log('Root route hit');
     res.send('Mykonos Bus Map API is running!');
 });
 
-app.get('/api/timetables', async (req, res) => {
+app.get('/api/timetables', (req, res) => {
     console.log('API /api/timetables requested');
-    // Temporary static response to test
     const testData = {
         "fabrika (mykonos town) - airport": {
             "lineId": "test",
