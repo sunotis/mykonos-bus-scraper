@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path'); // Add this line
 const app = express();
 
-// Allow requests from your web server
 app.use(cors({
     origin: 'https://mykonosbusmap.com'
 }));
