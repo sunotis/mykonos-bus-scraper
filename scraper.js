@@ -1,25 +1,23 @@
-const puppeteer = require('puppeteer');
-const cheerio = require('cheerio');
 const express = require('express');
-const cors = require('cors');
-const path = require('path'); // Add this for file paths
-
+const path = require('path');
 const app = express();
-app.use(cors());
 
-// Serve static files from the current directory (or specify a folder)
-app.use(express.static(path.join(__dirname, '.')));
+app.use(express.static(path.join(__dirname, '.'))); // Serve static files
 
-// Your existing API endpoint
+// Serve index_grokScrape.html at root
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index_grokScrape.html'));
+});
+
+// Your existing API route
 app.get('/api/timetables', async (req, res) => {
     const timetables = await scrapeTimetables();
     res.json(timetables);
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+app.listen(port, () => console.log(`Server running on port ${port}`));
+
 
 // Custom delay function
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
