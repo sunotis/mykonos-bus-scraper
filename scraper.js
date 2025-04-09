@@ -2,7 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-app.use(cors({ origin: 'https://mykonosbusmap.com' }));
+// Broaden CORS for testing
+app.use(cors({
+    origin: '*', // Temporary—switch back to 'https://mykonosbusmap.com' later
+    methods: ['GET'],
+    allowedHeaders: ['Content-Type']
+}));
 
 app.get('/', (req, res) => {
     console.log('Root route hit');
@@ -21,6 +26,12 @@ app.get('/api/timetables', (req, res) => {
     };
     console.log('API response:', testData);
     res.json(testData);
+});
+
+// Catch-all for debugging
+app.use((req, res) => {
+    console.log(`Unhandled route: ${req.method} ${req.url}`);
+    res.status(404).send('Route not found');
 });
 
 const port = process.env.PORT || 3000;
