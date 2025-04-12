@@ -6,9 +6,9 @@ const cors = require('cors');
 
 const app = express();
 
-// CORS setup - Temporarily allow all origins for debugging
+// CORS setup
 app.use(cors({
-    origin: '*', // Allow all origins for now
+    origin: ['https://mykonosbusmap.com', 'http://localhost:3000'],
     methods: ['GET', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'],
     credentials: false
@@ -31,6 +31,11 @@ const lineIdMapping = {
     "old port (mykonos town) - kalafatis": "1555955724133-aa71677d-efab",
     "fabrika (mykonos town) - ornos - agios ioannis": "1555953369529-535afd32-cab3",
     "old port (mykonos town) - agios stefanos - new port": "1555953369558-22c24d44-888a"
+    // Disabled routes (not supported currently, may enable in the future)
+    // "old port (mykonos town) - kalo livadi": "1555957517174-c6496040-c68b",
+    // "old port (mykonos town) - panormos": "1557747887993-356701dd-5541",
+    // "fabrika (mykonos town) - kalo livadi": "1720281530535-d5be00b4-2271",
+    // "old port (mykonos town) - paradise": "1555958831438-01ea3ba0-76f7" // Disabled as of April 2025
 };
 
 const imageMapping = {
@@ -47,7 +52,14 @@ const imageMapping = {
     "old port (mykonos town) - kalafatis": "stops_oldport-kalafatis_01.svg",
     "fabrika (mykonos town) - ornos - agios ioannis": "stops_fabrika-ornos-agios_01.svg",
     "old port (mykonos town) - agios stefanos - new port": "stops_oldport-agios-newport_01.svg"
+    // Disabled routes (not supported currently, may enable in the future)
+    // "old port (mykonos town) - kalo livadi": "stops_oldport-kalolivadi_01.svg",
+    // "old port (mykonos town) - panormos": "stops_oldport-panormos_01.svg",
+    // "fabrika (mykonos town) - kalo livadi": "stops_fabrika-kalolivadi_01.svg",
+    // "old port (mykonos town) - paradise": "stops_oldport-paradise_01.svg" // Disabled as of April 2025
 };
+
+// Rest of the scraper.js code remains unchanged (omitted for brevity)
 
 const url = 'https://mykonosbus.com/bus-timetables/';
 
