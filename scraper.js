@@ -28,12 +28,13 @@ const lineIdMapping = {
     "fabrika (mykonos town) - paraga": "1555958067687-34a62bad-9d2a",
     "old port (mykonos town) - elia": "1555957001095-b4b0a91c-695a",
     "old port (mykonos town) - ano mera": "1555955564212-f820a83b-d513",
-    "old port (mykonos town) - kalo livadi": "1555957517174-c6496040-c68b",
     "old port (mykonos town) - kalafatis": "1555955724133-aa71677d-efab",
     "fabrika (mykonos town) - ornos - agios ioannis": "1555953369529-535afd32-cab3",
-    "old port (mykonos town) - agios stefanos - new port": "1555953369558-22c24d44-888a",
-    "old port (mykonos town) - panormos": "1557747887993-356701dd-5541",
-    "fabrika (mykonos town) - kalo livadi": "1720281530535-d5be00b4-2271"
+    "old port (mykonos town) - agios stefanos - new port": "1555953369558-22c24d44-888a"
+    // Disabled routes (not supported currently, may enable in the future)
+    // "old port (mykonos town) - kalo livadi": "1555957517174-c6496040-c68b",
+    // "old port (mykonos town) - panormos": "1557747887993-356701dd-5541",
+    // "fabrika (mykonos town) - kalo livadi": "1720281530535-d5be00b4-2271"
 };
 
 // Mapping of route names to image filenames
@@ -48,12 +49,13 @@ const imageMapping = {
     "fabrika (mykonos town) - paraga": "stops_fabrika-paraga_01.svg",
     "old port (mykonos town) - elia": "stops_oldport-elia_01.svg",
     "old port (mykonos town) - ano mera": "stops_oldport-anomera_01.svg",
-    "old port (mykonos town) - kalo livadi": "stops_oldport-paradise_01.svg",
     "old port (mykonos town) - kalafatis": "stops_oldport-kalafatis_01.svg",
     "fabrika (mykonos town) - ornos - agios ioannis": "stops_fabrika-ornos-agios_01.svg",
-    "old port (mykonos town) - agios stefanos - new port": "stops_oldport-agios-newport_01.svg",
-    "old port (mykonos town) - panormos": "stops_oldport-panormos_01.svg",
-    "fabrika (mykonos town) - kalo livadi": "stops_fabrika-kalolivadi_01.svg"
+    "old port (mykonos town) - agios stefanos - new port": "stops_oldport-agios-newport_01.svg"
+    // Disabled routes (not supported currently, may enable in the future)
+    // "old port (mykonos town) - kalo livadi": "stops_oldport-kalolivadi_01.svg",
+    // "old port (mykonos town) - panormos": "stops_oldport-panormos_01.svg",
+    // "fabrika (mykonos town) - kalo livadi": "stops_fabrika-kalolivadi_01.svg"
 };
 
 const url = 'https://mykonosbus.com/bus-timetables/';
@@ -85,7 +87,14 @@ async function scrapeTimetables() {
             routeIdMapping[id] = route;
         }
 
-        // Find all timetable sections
+        // Ensure all routes in lineIdMapping are included, even if not found on the page
+        for (const [route, lineId] of Object.entries(lineIdMapping)) {
+            times[route] = {
+                lineId: lineId,
+                headerImage: `https://mykonosbusmap.com/images/${imageMapping[route] || 'placeholder_01.svg'}`
+            };
+        }
+
         const sections = $('div.vc_tta-panel');
         console.log('Found timetable sections:', sections.length);
 
@@ -104,12 +113,6 @@ async function scrapeTimetables() {
 
             const table = $(section).find('table.aligncenter').first();
             console.log(`Table found for ${routeName}:`, table.length > 0);
-
-            // Always include the route in the response, even if no table is found
-            times[routeName] = {
-                lineId: lineId,
-                headerImage: `https://mykonosbusmap.com/images/${imageMapping[routeName] || 'placeholder_01.svg'}`
-            };
 
             if (table.length) {
                 const oldPortTimes = [];
@@ -193,8 +196,10 @@ async function scrapeTimetables() {
     }
 }
 
-// Cache the scraped data
+// Cache the scraped data with a timestamp
 let cachedTimetables = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 app.get('/', (req, res) => {
     console.log('Root route hit');
@@ -204,15 +209,36 @@ app.get('/', (req, res) => {
 app.get('/api/timetables', async (req, res) => {
     console.log('API /api/timetables requested');
     try {
-        // Use cached data if available
-        if (!cachedTimetables) {
-            cachedTimetables = await scrapeTimetables();
+        const now = Date.now();
+        // Use cached data if available and not older than CACHE_DURATION
+        if (cachedTimetables && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION)) {
+            console.log('Returning cached timetables');
+            return res.json(cachedTimetables);
         }
+
+        console.log('Scraping new timetables');
+        cachedTimetables = await scrapeTimetables();
+        cacheTimestamp = now;
         console.log('API response:', cachedTimetables);
         res.json(cachedTimetables);
     } catch (error) {
         console.error('Error in /api/timetables:', error.message);
         res.status(500).json({ error: 'Failed to fetch timetables' });
+    }
+});
+
+app.get('/api/refresh', async (req, res) => {
+    console.log('API /api/refresh requested');
+    try {
+        cachedTimetables = null; // Clear cache
+        cacheTimestamp = null;
+        cachedTimetables = await scrapeTimetables();
+        cacheTimestamp = Date.now();
+        console.log('API response after refresh:', cachedTimetables);
+        res.json(cachedTimetables);
+    } catch (error) {
+        console.error('Error in /api/refresh:', error.message);
+        res.status(500).json({ error: 'Failed to refresh timetables' });
     }
 });
 
