@@ -1,47 +1,19 @@
-const express = require('express');
-const cors = require('cors');
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
+const express = require('express');
+const cors = require('cors');
+
+console.log('Puppeteer version:', puppeteer.version);
+
 const app = express();
 
+// Simplified CORS setup to allow requests from mykonosbusmap.com
 app.use(cors({
-    origin: 'https://mykonosbusmap.com',
-    methods: ['GET'],
+    origin: ['https://mykonosbusmap.com', 'http://localhost:3000'],
+    methods: ['GET', 'OPTIONS'], // Allow OPTIONS for preflight
+    allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'], // Allow custom header
     credentials: false
 }));
-
-async function scrapeTimetables() {
-    try {
-        // Your scraping logic here
-        // Example placeholder:
-        return {
-            "fabrika (mykonos town) - airport": {
-                "lineId": "1559047590770-061945df-35ac",
-                "oldPort": ["09:00", "10:00"],
-                "newPort": ["09:15", "10:15"],
-                "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-airport_01.svg"
-            }
-        };
-    } catch (error) {
-        console.error('Scraping error:', error);
-        return { error: 'Scraping failed' };
-    }
-}
-
-app.get('/', (req, res) => {
-    console.log('Root route hit');
-    res.send('Mykonos Bus Map API is running!');
-});
-
-app.get('/api/timetables', async (req, res) => {
-    console.log('API /api/timetables requested');
-    const timetables = await scrapeTimetables();
-    console.log('API response:', timetables);
-    res.json(timetables);
-});
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
 
 // Custom delay function
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -77,12 +49,12 @@ const imageMapping = {
     "fabrika (mykonos town) - paraga": "stops_fabrika-paraga_01.svg",
     "old port (mykonos town) - elia": "stops_oldport-elia_01.svg",
     "old port (mykonos town) - ano mera": "stops_oldport-anomera_01.svg",
-    "old port (mykonos town) - kalo livadi": "stops_oldport-paradise_01.svg", // Note: Using "paradise" as per filename
+    "old port (mykonos town) - kalo livadi": "stops_oldport-paradise_01.svg",
     "old port (mykonos town) - kalafatis": "stops_oldport-kalafatis_01.svg",
     "fabrika (mykonos town) - ornos - agios ioannis": "stops_fabrika-ornos-agios_01.svg",
     "old port (mykonos town) - agios stefanos - new port": "stops_oldport-agios-newport_01.svg",
-    "old port (mykonos town) - panormos": "stops_oldport-panormos_01.svg", // Assuming this filename; confirm if it exists
-    "fabrika (mykonos town) - kalo livadi": "stops_fabrika-kalolivadi_01.svg" // Assuming this filename; confirm if it exists
+    "old port (mykonos town) - panormos": "stops_oldport-panormos_01.svg",
+    "fabrika (mykonos town) - kalo livadi": "stops_fabrika-kalolivadi_01.svg"
 };
 
 const url = 'https://mykonosbus.com/bus-timetables/';
@@ -207,17 +179,39 @@ async function scrapeTimetables() {
                 "lineId": "1559047590770-061945df-35ac",
                 "oldPort": ["09:00", "10:00", "11:00"],
                 "newPort": ["09:15", "10:15", "11:15"],
-                "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-mykonos-town-airport_01.svg"
+                "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-airport_01.svg"
             }
         };
     } finally {
-        if (browser) await browser.close();
+        if (browser) {
+            console.log('Closing browser...');
+            await browser.close();
+        }
     }
 }
 
-app.get('/api/timetables', async (req, res) => {
-    const timetables = await scrapeTimetables();
-    res.json(timetables);
+// Cache the scraped data
+let cachedTimetables = null;
+
+app.get('/', (req, res) => {
+    console.log('Root route hit');
+    res.send('Mykonos Bus Map API is running!');
 });
 
+app.get('/api/timetables', async (req, res) => {
+    console.log('API /api/timetables requested');
+    try {
+        // Use cached data if available
+        if (!cachedTimetables) {
+            cachedTimetables = await scrapeTimetables();
+        }
+        console.log('API response:', cachedTimetables);
+        res.json(cachedTimetables);
+    } catch (error) {
+        console.error('Error in /api/timetables:', error.message);
+        res.status(500).json({ error: 'Failed to fetch timetables' });
+    }
+});
 
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server running on port ${port}`));
