@@ -1,17 +1,16 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 const cheerio = require('cheerio');
 const express = require('express');
 const cors = require('cors');
 
-console.log('Puppeteer version:', puppeteer.version);
-
 const app = express();
 
-// Simplified CORS setup to allow requests from mykonosbusmap.com
+// CORS setup for mykonosbusmap.com
 app.use(cors({
     origin: ['https://mykonosbusmap.com', 'http://localhost:3000'],
-    methods: ['GET', 'OPTIONS'], // Allow OPTIONS for preflight
-    allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'], // Allow custom header
+    methods: ['GET', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'ngrok-skip-browser-warning'],
     credentials: false
 }));
 
@@ -63,7 +62,11 @@ async function scrapeTimetables() {
     let browser;
     try {
         console.log('Launching browser...');
-        browser = await puppeteer.launch({ headless: true });
+        browser = await puppeteer.launch({
+            executablePath: await chromium.executablePath(),
+            headless: chromium.headless,
+            args: chromium.args
+        });
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
         console.log('Navigating to URL:', url);
