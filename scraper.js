@@ -31,11 +31,6 @@ const lineIdMapping = {
     "old port (mykonos town) - kalafatis": "1555955724133-aa71677d-efab",
     "fabrika (mykonos town) - ornos - agios ioannis": "1555953369529-535afd32-cab3",
     "old port (mykonos town) - agios stefanos - new port": "1555953369558-22c24d44-888a"
-    // Disabled routes (not supported currently, may enable in the future)
-    // "old port (mykonos town) - kalo livadi": "1555957517174-c6496040-c68b",
-    // "old port (mykonos town) - panormos": "1557747887993-356701dd-5541",
-    // "fabrika (mykonos town) - kalo livadi": "1720281530535-d5be00b4-2271",
-    // "old port (mykonos town) - paradise": "1555958831438-01ea3ba0-76f7" // Disabled as of April 2025
 };
 
 const imageMapping = {
@@ -52,14 +47,7 @@ const imageMapping = {
     "old port (mykonos town) - kalafatis": "stops_oldport-kalafatis_01.svg",
     "fabrika (mykonos town) - ornos - agios ioannis": "stops_fabrika-ornos-agios_01.svg",
     "old port (mykonos town) - agios stefanos - new port": "stops_oldport-agios-newport_01.svg"
-    // Disabled routes (not supported currently, may enable in the future)
-    // "old port (mykonos town) - kalo livadi": "stops_oldport-kalolivadi_01.svg",
-    // "old port (mykonos town) - panormos": "stops_oldport-panormos_01.svg",
-    // "fabrika (mykonos town) - kalo livadi": "stops_fabrika-kalolivadi_01.svg",
-    // "old port (mykonos town) - paradise": "stops_oldport-paradise_01.svg" // Disabled as of April 2025
 };
-
-// Rest of the scraper.js code remains unchanged (omitted for brevity)
 
 const url = 'https://mykonosbus.com/bus-timetables/';
 
@@ -132,7 +120,9 @@ async function scrapeTimetables() {
                         const oldPortCell = $(cells[0]).find('p').length
                             ? $(cells[0]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
                             : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-                        let newPortCell, midPortCell;
+                        let newPortCell = [];
+                        let midPortCell = [];
+
                         if (hasMiddleStop && cells.length >= 3) {
                             midPortCell = $(cells[1]).find('p').length
                                 ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
@@ -140,35 +130,33 @@ async function scrapeTimetables() {
                             newPortCell = $(cells[2]).find('p').length
                                 ? $(cells[2]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
                                 : $(cells[2]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-                        } else {
+                        } else if (cells.length >= 2) {
                             newPortCell = $(cells[1]).find('p').length
                                 ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
                                 : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                         }
 
-                        oldPortCell.forEach(time => oldPortTimes.push(time));
-                        if (hasMiddleStop) {
-                            midPortCell.forEach(time => midPortTimes.push(time));
-                            newPortCell.forEach(time => newPortTimes.push(time));
-                        } else {
-                            newPortCell.forEach(time => newPortTimes.push(time));
-                        }
+                        // Safely add times, avoid undefined
+                        if (Array.isArray(oldPortCell)) oldPortCell.forEach(time => oldPortTimes.push(time));
+                        if (hasMiddleStop && Array.isArray(midPortCell)) midPortCell.forEach(time => midPortTimes.push(time));
+                        if (Array.isArray(newPortCell)) newPortCell.forEach(time => newPortTimes.push(time));
                     }
                 });
 
                 // Clean header text (remove HTML, normalize case)
                 const cleanHeader = (index) => {
+                    if (!headers[index]) return `Unknown_${index}`;
                     let text = $(headers[index]).text().trim().replace(/\s+/g, ' ');
-                    text = text.replace(/FROM\s+/i, '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-                    return text;
+                    text = text.replace(/FROM\s+/i, '').replace(/[^a-zA-Z\s]/g, '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                    return text || `Unknown_${index}`;
                 };
 
-                if (oldPortTimes.length > 0) {
+                if (oldPortTimes.length > 0 || newPortTimes.length > 0) {
                     times[routeName] = {
                         ...times[routeName],
                         oldPort: [cleanHeader(0), ...oldPortTimes],
                         newPort: [cleanHeader(hasMiddleStop ? 2 : 1), ...newPortTimes],
-                        midPort: hasMiddleStop ? [cleanHeader(1), ...midPortTimes] : undefined,
+                        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1), ...midPortTimes] : undefined,
                         hasMiddleStop
                     };
                     console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
@@ -192,14 +180,8 @@ async function scrapeTimetables() {
         return times;
     } catch (error) {
         console.error('Scrape error:', error.message);
-        return {
-            "fabrika (mykonos town) - airport": {
-                "lineId": "1559047590770-061945df-35ac",
-                "oldPort": ["09:00", "10:00", "11:00"],
-                "newPort": ["09:15", "10:15", "11:15"],
-                "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-airport_01.svg"
-            }
-        };
+        // Return partial results instead of fallback
+        return times || {};
     } finally {
         if (browser) {
             console.log('Closing browser...');
@@ -231,7 +213,7 @@ app.get('/api/timetables', async (req, res) => {
         console.log('Scraping new timetables');
         cachedTimetables = await scrapeTimetables();
         cacheTimestamp = now;
-        console.log('API response:', cachedTimetables);
+        console.log('API response:', Object.keys(cachedTimetables));
         res.json(cachedTimetables);
     } catch (error) {
         console.error('Error in /api/timetables:', error.message);
@@ -246,7 +228,7 @@ app.get('/api/refresh', async (req, res) => {
         cacheTimestamp = null;
         cachedTimetables = await scrapeTimetables();
         cacheTimestamp = Date.now();
-        console.log('API response after refresh:', cachedTimetables);
+        console.log('API response after refresh:', Object.keys(cachedTimetables));
         res.json(cachedTimetables);
     } catch (error) {
         console.error('Error in /api/refresh:', error.message);
@@ -254,5 +236,5 @@ app.get('/api/refresh', async (req, res) => {
     }
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
