@@ -78,10 +78,14 @@ async function scrapeTimetables() {
         await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
         console.log('Waiting for content...');
-        await delay(30000); // 30s for dynamic content
+        await delay(30000); // 30s for static content
 
         const content = await page.content();
         console.log('Page HTML length:', content.length);
+        if (content.length < 1000) {
+            console.error('Page content too short, likely failed to load');
+            throw new Error('Page load incomplete');
+        }
         const $ = cheerio.load(content);
         const times = {};
 
@@ -116,49 +120,64 @@ async function scrapeTimetables() {
                 const midPortTimes = [];
                 let hasMiddleStop = false;
 
-                const headers = table.find('thead tr th, tr th');
-                if (headers.length === 3) hasMiddleStop = true;
+                const headers = table.find('tr:first-child td');
+                if (headers.length >= 3) hasMiddleStop = true;
+                console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, headers: ${headers.length}`);
 
-                table.find('tbody tr, tr').each((i, row) => {
+                const rows = table.find('tr').slice(1); // Skip header row
+                rows.each((i, row) => {
                     const cells = $(row).find('td');
                     if (cells.length >= 2) {
+                        // Extract times from <p> tags or direct text
                         const oldPortCell = $(cells[0]).find('p').length
-                            ? $(cells[0]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                            : [$(cells[0]).text().trim().replace(/\s+/g, ' ')];
-                        const newPortCell = hasMiddleStop
-                            ? $(cells[2]).find('p').length
-                                ? $(cells[2]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                                : [$(cells[2]).text().trim().replace(/\s+/g, ' ')]
-                            : $(cells[1]).find('p').length
-                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                                : [$(cells[1]).text().trim().replace(/\s+/g, ' ')];
+                            ? $(cells[0]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                            : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
+                        let newPortCell, midPortCell;
+                        if (hasMiddleStop && cells.length >= 3) {
+                            midPortCell = $(cells[1]).find('p').length
+                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                                : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
+                            newPortCell = $(cells[2]).find('p').length
+                                ? $(cells[2]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                                : $(cells[2]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
+                        } else {
+                            newPortCell = $(cells[1]).find('p').length
+                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                                : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
+                        }
 
+                        oldPortCell.forEach(time => oldPortTimes.push(time));
                         if (hasMiddleStop) {
-                            const midPortCell = $(cells[1]).find('p').length
-                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                                : [$(cells[1]).text().trim().replace(/\s+/g, ' ')];
                             midPortCell.forEach(time => midPortTimes.push(time));
                             newPortCell.forEach(time => newPortTimes.push(time));
                         } else {
-                            oldPortCell.forEach(time => oldPortTimes.push(time));
                             newPortCell.forEach(time => newPortTimes.push(time));
                         }
                     }
                 });
 
+                // Clean header text (remove HTML, normalize case)
+                const cleanHeader = (index) => {
+                    let text = $(headers[index]).text().trim().replace(/\s+/g, ' ');
+                    text = text.replace(/FROM\s+/i, '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                    return text;
+                };
+
                 if (oldPortTimes.length > 0) {
                     times[routeName] = {
                         ...times[routeName],
-                        oldPort: [$(headers[0]).text().trim(), ...oldPortTimes],
-                        newPort: [$(headers[hasMiddleStop ? 2 : 1]).text().trim(), ...newPortTimes],
-                        midPort: hasMiddleStop ? [$(headers[1]).text().trim(), ...midPortTimes] : undefined,
+                        oldPort: [cleanHeader(0), ...oldPortTimes],
+                        newPort: [cleanHeader(hasMiddleStop ? 2 : 1), ...newPortTimes],
+                        midPort: hasMiddleStop ? [cleanHeader(1), ...midPortTimes] : undefined,
                         hasMiddleStop
                     };
+                    console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
                 } else {
                     times[routeName] = {
                         ...times[routeName],
                         message: "No service available—check back later"
                     };
+                    console.log(`${routeName} no times found`);
                 }
             } else {
                 console.log(`No table for ${routeName}`);
@@ -182,7 +201,10 @@ async function scrapeTimetables() {
             }
         };
     } finally {
-        if (browser) await browser.close();
+        if (browser) {
+            console.log('Closing browser...');
+            await browser.close();
+        }
     }
 }
 
