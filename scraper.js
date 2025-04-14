@@ -73,24 +73,18 @@ async function scrapeTimetables() {
             args: chromium.args
         });
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
         console.log('Navigating to URL:', url);
         await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
-        console.log('Waiting for content to load...');
-        await delay(20000); // 20 seconds to ensure content loads
+        console.log('Waiting for content...');
+        await delay(30000); // 30s for dynamic content
 
         const content = await page.content();
+        console.log('Page HTML length:', content.length);
         const $ = cheerio.load(content);
         const times = {};
 
-        // Map lineId to route name for lookup
-        const routeIdMapping = {};
-        for (const [route, id] of Object.entries(lineIdMapping)) {
-            routeIdMapping[id] = route;
-        }
-
-        // Ensure all routes in lineIdMapping are included, even if not found on the page
         for (const [route, lineId] of Object.entries(lineIdMapping)) {
             times[route] = {
                 lineId: lineId,
@@ -99,23 +93,22 @@ async function scrapeTimetables() {
         }
 
         const sections = $('div.vc_tta-panel');
-        console.log('Found timetable sections:', sections.length);
+        console.log('Found sections:', sections.length);
 
         sections.each((index, section) => {
             const lineId = $(section).attr('id');
-            console.log(`Processing section with lineId: ${lineId}`);
-            const routeName = routeIdMapping[lineId];
+            const routeName = Object.keys(lineIdMapping).find(route => lineIdMapping[route] === lineId);
             if (!routeName) {
-                console.log(`No route name found for lineId: ${lineId}`);
-                return; // Skip if no matching route
+                console.log(`No route for lineId: ${lineId}`);
+                return;
             }
 
-            const title = $(section).find('span.vc_tta-title-text').text().trim().replace(/\s+/g, ' ').toLowerCase();
-            console.log(`Route name from page: "${title}"`);
-            console.log(`Mapped route name: "${routeName}"`);
-
-            const table = $(section).find('table.aligncenter').first();
-            console.log(`Table found for ${routeName}:`, table.length > 0);
+            console.log(`Processing ${routeName} (ID: ${lineId})`);
+            let table = $(section).find('table.aligncenter').first();
+            if (!table.length) {
+                table = $(section).find('table').first();
+                console.log(`Used fallback table selector for ${routeName}`);
+            }
 
             if (table.length) {
                 const oldPortTimes = [];
@@ -123,26 +116,29 @@ async function scrapeTimetables() {
                 const midPortTimes = [];
                 let hasMiddleStop = false;
 
-                const headers = table.find('thead tr th');
+                const headers = table.find('thead tr th, tr th');
                 if (headers.length === 3) hasMiddleStop = true;
 
-                table.find('tbody tr').each((i, row) => {
+                table.find('tbody tr, tr').each((i, row) => {
                     const cells = $(row).find('td');
                     if (cells.length >= 2) {
-                        // Extract times, removing extra <p> tags and whitespace
                         const oldPortCell = $(cells[0]).find('p').length
                             ? $(cells[0]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                            : [$(cells[0]).text().trim()];
-                        const newPortCell = $(cells[1]).find('p').length
-                            ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                            : [$(cells[1]).text().trim()];
+                            : [$(cells[0]).text().trim().replace(/\s+/g, ' ')];
+                        const newPortCell = hasMiddleStop
+                            ? $(cells[2]).find('p').length
+                                ? $(cells[2]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
+                                : [$(cells[2]).text().trim().replace(/\s+/g, ' ')]
+                            : $(cells[1]).find('p').length
+                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
+                                : [$(cells[1]).text().trim().replace(/\s+/g, ' ')];
 
                         if (hasMiddleStop) {
                             const midPortCell = $(cells[1]).find('p').length
                                 ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t)
-                                : [$(cells[1]).text().trim()];
+                                : [$(cells[1]).text().trim().replace(/\s+/g, ' ')];
                             midPortCell.forEach(time => midPortTimes.push(time));
-                            newPortCell.forEach(time => newPortTimes.push($(cells[2]).text().trim()));
+                            newPortCell.forEach(time => newPortTimes.push(time));
                         } else {
                             oldPortCell.forEach(time => oldPortTimes.push(time));
                             newPortCell.forEach(time => newPortTimes.push(time));
@@ -153,36 +149,30 @@ async function scrapeTimetables() {
                 if (oldPortTimes.length > 0) {
                     times[routeName] = {
                         ...times[routeName],
-                        oldPort: oldPortTimes,
-                        newPort: newPortTimes,
-                        midPort: hasMiddleStop ? midPortTimes : undefined,
+                        oldPort: [$(headers[0]).text().trim(), ...oldPortTimes],
+                        newPort: [$(headers[hasMiddleStop ? 2 : 1]).text().trim(), ...newPortTimes],
+                        midPort: hasMiddleStop ? [$(headers[1]).text().trim(), ...midPortTimes] : undefined,
                         hasMiddleStop
+                    };
+                } else {
+                    times[routeName] = {
+                        ...times[routeName],
+                        message: "No service available—check back later"
                     };
                 }
             } else {
-                console.log(`No timetable found for ${routeName} - likely out of season.`);
+                console.log(`No table for ${routeName}`);
                 times[routeName] = {
                     ...times[routeName],
-                    message: "No service available—check back in summer"
+                    message: "No service available—check back later"
                 };
             }
         });
 
         console.log('Scraped routes:', Object.keys(times));
-        if (Object.keys(times).length === 0) {
-            console.warn('No routes scraped, returning fallback');
-            return {
-                "fabrika (mykonos town) - airport": {
-                    "lineId": "1559047590770-061945df-35ac",
-                    "oldPort": ["09:00", "10:00", "11:00"],
-                    "newPort": ["09:15", "10:15", "11:15"],
-                    "headerImage": "https://mykonosbusmap.com/images/stops_fabrika-airport_01.svg"
-                }
-            };
-        }
         return times;
     } catch (error) {
-        console.error('Error scraping:', error.message);
+        console.error('Scrape error:', error.message);
         return {
             "fabrika (mykonos town) - airport": {
                 "lineId": "1559047590770-061945df-35ac",
@@ -192,10 +182,7 @@ async function scrapeTimetables() {
             }
         };
     } finally {
-        if (browser) {
-            console.log('Closing browser...');
-            await browser.close();
-        }
+        if (browser) await browser.close();
     }
 }
 
