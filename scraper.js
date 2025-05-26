@@ -17,6 +17,12 @@ app.use(cors({
 // Custom delay function
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Clean header function
+function cleanHeader(index, table) {
+    const headers = table.find('tr:first-child td');
+    return headers.eq(index).text().trim() || `Column ${index}`;
+}
+
 const lineIdMapping = {
     "fabrika (mykonos town) - airport": "1559047590770-061945df-35ac",
     "airport - new port": "1559047898109-40e76be5-801f",
@@ -53,6 +59,7 @@ const url = 'https://mykonosbus.com/bus-timetables/';
 
 async function scrapeTimetables() {
     let browser;
+    let times = {}; // Initialize times
     try {
         console.log('Launching browser...');
         browser = await puppeteer.launch({
@@ -75,7 +82,6 @@ async function scrapeTimetables() {
             throw new Error('Page load incomplete');
         }
         const $ = cheerio.load(content);
-        const times = {};
 
         for (const [route, lineId] of Object.entries(lineIdMapping)) {
             times[route] = {
@@ -107,16 +113,15 @@ async function scrapeTimetables() {
                 const newPortTimes = [];
                 const midPortTimes = [];
                 let hasMiddleStop = false;
-            
+
                 const headers = table.find('tr:first-child td');
                 if (headers.length >= 3) hasMiddleStop = true;
                 console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, headers: ${headers.length}`);
-            
+
                 const rows = table.find('tr').slice(1); // Skip header row
                 rows.each((i, row) => {
                     const cells = $(row).find('td');
                     if (cells.length >= 2) {
-                        // Extract times from <p> tags, ensuring <strong> tags are included
                         const oldPortCell = $(cells[0]).find('p').length
                             ? $(cells[0]).find('p').map((j, p) => {
                                   const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
@@ -125,11 +130,12 @@ async function scrapeTimetables() {
                             : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                         let newPortCell = [];
                         let midPortCell = [];
-            
+
                         if (hasMiddleStop && cells.length >= 3) {
                             midPortCell = $(cells[1]).find('p').length
                                 ? $(cells[1]).find('p').map((j, p) => {
                                       const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                                      console.log(`midPortCell raw text [${routeName}]:`, $(p).html()); // Debug log
                                       return text.match(/^\d{2}:\d{2}$/) ? text : null;
                                   }).get().filter(Boolean)
                                 : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
@@ -147,26 +153,26 @@ async function scrapeTimetables() {
                                   }).get().filter(Boolean)
                                 : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                         }
-            
+
                         console.log(`Row ${i} for ${routeName}: oldPortCell=${oldPortCell}, midPortCell=${midPortCell}, newPortCell=${newPortCell}`);
-            
+
                         if (Array.isArray(oldPortCell)) oldPortCell.forEach(time => oldPortTimes.push(time));
                         if (hasMiddleStop && Array.isArray(midPortCell)) midPortCell.forEach(time => midPortTimes.push(time));
                         if (Array.isArray(newPortCell)) newPortCell.forEach(time => newPortTimes.push(time));
                     }
                 });
-            
-                // Require both oldPortTimes and newPortTimes to have times for two-stop routes
+
+                // Relaxed check to allow empty midPortTimes
                 const hasValidTimes = hasMiddleStop
-                    ? (oldPortTimes.length > 0 && newPortTimes.length > 0 && midPortTimes.length > 0)
+                    ? (oldPortTimes.length > 0 && newPortTimes.length > 0)
                     : (oldPortTimes.length > 0 && newPortTimes.length > 0);
-            
+
                 if (hasValidTimes) {
                     times[routeName] = {
                         ...times[routeName],
-                        oldPort: [cleanHeader(0), ...oldPortTimes],
-                        newPort: [cleanHeader(hasMiddleStop ? 2 : 1), ...newPortTimes],
-                        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1), ...midPortTimes] : undefined,
+                        oldPort: [cleanHeader(0, table), ...oldPortTimes],
+                        newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
+                        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
                         hasMiddleStop
                     };
                     console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
@@ -184,8 +190,7 @@ async function scrapeTimetables() {
         return times;
     } catch (error) {
         console.error('Scrape error:', error.message);
-        // Return partial results instead of fallback
-        return times || {};
+        return times; // Return partial results
     } finally {
         if (browser) {
             console.log('Closing browser...');
