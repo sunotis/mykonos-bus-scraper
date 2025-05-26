@@ -107,51 +107,61 @@ async function scrapeTimetables() {
                 const newPortTimes = [];
                 const midPortTimes = [];
                 let hasMiddleStop = false;
-
+            
                 const headers = table.find('tr:first-child td');
                 if (headers.length >= 3) hasMiddleStop = true;
                 console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, headers: ${headers.length}`);
-
+            
                 const rows = table.find('tr').slice(1); // Skip header row
                 rows.each((i, row) => {
                     const cells = $(row).find('td');
                     if (cells.length >= 2) {
-                        // Extract times from <p> tags or direct text
+                        // Extract times from <p> tags, ensuring <strong> tags are included
                         const oldPortCell = $(cells[0]).find('p').length
-                            ? $(cells[0]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                            ? $(cells[0]).find('p').map((j, p) => {
+                                  const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                                  return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                              }).get().filter(Boolean)
                             : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                         let newPortCell = [];
                         let midPortCell = [];
-
+            
                         if (hasMiddleStop && cells.length >= 3) {
                             midPortCell = $(cells[1]).find('p').length
-                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                                ? $(cells[1]).find('p').map((j, p) => {
+                                      const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                                      return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                                  }).get().filter(Boolean)
                                 : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                             newPortCell = $(cells[2]).find('p').length
-                                ? $(cells[2]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                                ? $(cells[2]).find('p').map((j, p) => {
+                                      const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                                      return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                                  }).get().filter(Boolean)
                                 : $(cells[2]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                         } else if (cells.length >= 2) {
                             newPortCell = $(cells[1]).find('p').length
-                                ? $(cells[1]).find('p').map((j, p) => $(p).text().trim()).get().filter(t => t && t.match(/^\d{2}:\d{2}$/))
+                                ? $(cells[1]).find('p').map((j, p) => {
+                                      const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                                      return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                                  }).get().filter(Boolean)
                                 : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                         }
-
-                        // Safely add times, avoid undefined
+            
+                        console.log(`Row ${i} for ${routeName}: oldPortCell=${oldPortCell}, midPortCell=${midPortCell}, newPortCell=${newPortCell}`);
+            
                         if (Array.isArray(oldPortCell)) oldPortCell.forEach(time => oldPortTimes.push(time));
                         if (hasMiddleStop && Array.isArray(midPortCell)) midPortCell.forEach(time => midPortTimes.push(time));
                         if (Array.isArray(newPortCell)) newPortCell.forEach(time => newPortTimes.push(time));
                     }
                 });
-
-                // Clean header text (remove HTML, normalize case)
-                const cleanHeader = (index) => {
-                    if (!headers[index]) return `Unknown_${index}`;
-                    let text = $(headers[index]).text().trim().replace(/\s+/g, ' ');
-                    text = text.replace(/FROM\s+/i, '').replace(/[^a-zA-Z\s]/g, '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-                    return text || `Unknown_${index}`;
-                };
-
-                if (oldPortTimes.length > 0 || newPortTimes.length > 0) {
+            
+                // Require both oldPortTimes and newPortTimes to have times for two-stop routes
+                const hasValidTimes = hasMiddleStop
+                    ? (oldPortTimes.length > 0 && newPortTimes.length > 0 && midPortTimes.length > 0)
+                    : (oldPortTimes.length > 0 && newPortTimes.length > 0);
+            
+                if (hasValidTimes) {
                     times[routeName] = {
                         ...times[routeName],
                         oldPort: [cleanHeader(0), ...oldPortTimes],
@@ -165,14 +175,8 @@ async function scrapeTimetables() {
                         ...times[routeName],
                         message: "No service available—check back later"
                     };
-                    console.log(`${routeName} no times found`);
+                    console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
                 }
-            } else {
-                console.log(`No table for ${routeName}`);
-                times[routeName] = {
-                    ...times[routeName],
-                    message: "No service available—check back later"
-                };
             }
         });
 
