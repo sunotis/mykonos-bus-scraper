@@ -93,98 +93,109 @@ async function scrapeTimetables() {
         const sections = $('div.vc_tta-panel');
         console.log('Found sections:', sections.length);
 
-        sections.each((index, section) => {
-            const lineId = $(section).attr('id');
-            const routeName = Object.keys(lineIdMapping).find(route => lineIdMapping[route] === lineId);
-            if (!routeName) {
-                console.log(`No route for lineId: ${lineId}`);
-                return;
-            }
+        // Inside the sections.each loop
+sections.each((index, section) => {
+    const lineId = $(section).attr('id');
+    const routeName = Object.keys(lineIdMapping).find(route => lineIdMapping[route] === lineId);
+    if (!routeName) {
+        console.log(`No route for lineId: ${lineId}`);
+        return;
+    }
 
-            console.log(`Processing ${routeName} (ID: ${lineId})`);
-            let table = $(section).find('table.aligncenter').first();
-            if (!table.length) {
-                table = $(section).find('table').first();
-                console.log(`Used fallback table selector for ${routeName}`);
-            }
+    console.log(`Processing ${routeName} (ID: ${lineId})`);
+    let table = $(section).find('table.aligncenter').first();
+    if (!table.length) {
+        table = $(section).find('table').first();
+        console.log(`Used fallback table selector for ${routeName}`);
+    }
 
-            if (table.length) {
-                const oldPortTimes = [];
-                const newPortTimes = [];
-                const midPortTimes = [];
-                let hasMiddleStop = false;
+    if (table.length) {
+        const oldPortTimes = [];
+        const newPortTimes = [];
+        const midPortTimes = [];
+        // Determine hasMiddleStop based on tbody row columns
+        const firstRow = table.find('tbody tr').first();
+        const numColumns = firstRow.find('td').length;
+        let hasMiddleStop = numColumns >= 3;
+        console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, columns: ${numColumns}`);
 
-                const headers = table.find('tr:first-child td');
-                if (headers.length >= 3) hasMiddleStop = true;
-                console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, headers: ${headers.length}`);
+        const headers = table.find('tr:first-child td');
+        const rows = table.find('tr').slice(headers.length > 0 ? 1 : 0); // Skip header row if present
 
-                const rows = table.find('tr').slice(1); // Skip header row
-                rows.each((i, row) => {
-                    const cells = $(row).find('td');
-                    if (cells.length >= 2) {
-                        const oldPortCell = $(cells[0]).find('p').length
-                            ? $(cells[0]).find('p').map((j, p) => {
-                                  const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
-                                  return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                              }).get().filter(Boolean)
-                            : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-                        let newPortCell = [];
-                        let midPortCell = [];
+        rows.each((i, row) => {
+            const cells = $(row).find('td');
+            if (cells.length >= 2) {
+                // oldPortCell (first column)
+                const oldPortCell = $(cells[0]).find('p').length
+                    ? $(cells[0]).find('p').map((j, p) => {
+                          const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                          return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                      }).get().filter(Boolean)
+                    : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
 
-                        if (hasMiddleStop && cells.length >= 3) {
-                            midPortCell = $(cells[1]).find('p').length
-                                ? $(cells[1]).find('p').map((j, p) => {
-                                      const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
-                                      console.log(`midPortCell raw text [${routeName}]:`, $(p).html()); // Debug log
-                                      return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                                  }).get().filter(Boolean)
-                                : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-                            newPortCell = $(cells[2]).find('p').length
-                                ? $(cells[2]).find('p').map((j, p) => {
-                                      const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
-                                      return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                                  }).get().filter(Boolean)
-                                : $(cells[2]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-                        } else if (cells.length >= 2) {
-                            newPortCell = $(cells[1]).find('p').length
-                                ? $(cells[1]).find('p').map((j, p) => {
-                                      const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
-                                      return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                                  }).get().filter(Boolean)
-                                : $(cells[1]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-                        }
+                let newPortCell = [];
+                let midPortCell = [];
 
-                        console.log(`Row ${i} for ${routeName}: oldPortCell=${oldPortCell}, midPortCell=${midPortCell}, newPortCell=${newPortCell}`);
+                if (hasMiddleStop && cells.length >= 3) {
+                    // midPortCell (second column)
+                    midPortCell = $(cells[1]).find('p').length
+                        ? $(cells[1]).find('p').map((j, p) => {
+                              const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                              console.log(`midPortCell raw text [${routeName}]:`, $(p).html());
+                              return text.split(/[\n<br>\s]+/).map(t => t.trim()).filter(t => t.match(/^\d{2}:\d{2}$/));
+                          }).get().flat().filter(Boolean)
+                        : $(cells[1]).text().trim().split(/[\n\s]+/).filter(t => t.match(/^\d{2}:\d{2}$/));
 
-                        if (Array.isArray(oldPortCell)) oldPortCell.forEach(time => oldPortTimes.push(time));
-                        if (hasMiddleStop && Array.isArray(midPortCell)) midPortCell.forEach(time => midPortTimes.push(time));
-                        if (Array.isArray(newPortCell)) newPortCell.forEach(time => newPortTimes.push(time));
-                    }
-                });
-
-                // Relaxed check to allow empty midPortTimes
-                const hasValidTimes = hasMiddleStop
-                    ? (oldPortTimes.length > 0 && newPortTimes.length > 0)
-                    : (oldPortTimes.length > 0 && newPortTimes.length > 0);
-
-                if (hasValidTimes) {
-                    times[routeName] = {
-                        ...times[routeName],
-                        oldPort: [cleanHeader(0, table), ...oldPortTimes],
-                        newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
-                        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
-                        hasMiddleStop
-                    };
-                    console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
+                    // newPortCell (third column)
+                    newPortCell = $(cells[2]).find('p').length
+                        ? $(cells[2]).find('p').map((j, p) => {
+                              const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                              console.log(`newPortCell raw text [${routeName}]:`, $(p).html());
+                              return text.split(/[\n<br>\s]+/).map(t => t.trim()).filter(t => t.match(/^\d{2}:\d{2}$/));
+                          }).get().flat().filter(Boolean)
+                        : $(cells[2]).text().trim().split(/[\n\s]+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                 } else {
-                    times[routeName] = {
-                        ...times[routeName],
-                        message: "No service available—check back later"
-                    };
-                    console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
+                    // newPortCell (second column when no middle stop)
+                    newPortCell = $(cells[1]).find('p').length
+                        ? $(cells[1]).find('p').map((j, p) => {
+                              const text = $(p).find('strong').length ? $(p).find('strong').text().trim() : $(p).text().trim();
+                              console.log(`newPortCell raw text [${routeName}]:`, $(p).html());
+                              return text.split(/[\n<br>\s]+/).map(t => t.trim()).filter(t => t.match(/^\d{2}:\d{2}$/));
+                          }).get().flat().filter(Boolean)
+                        : $(cells[1]).text().trim().split(/[\n\s]+/).filter(t => t.match(/^\d{2}:\d{2}$/));
                 }
+
+                console.log(`Row ${i} for ${routeName}: oldPortCell=${oldPortCell}, midPortCell=${midPortCell}, newPortCell=${newPortCell}`);
+
+                if (Array.isArray(oldPortCell)) oldPortCell.forEach(time => oldPortTimes.push(time));
+                if (hasMiddleStop && Array.isArray(midPortCell)) midPortCell.forEach(time => midPortTimes.push(time));
+                if (Array.isArray(newPortCell)) newPortCell.forEach(time => newPortTimes.push(time));
             }
         });
+
+        // Relaxed check to allow empty midPortTimes
+        const hasValidTimes = hasMiddleStop
+            ? (oldPortTimes.length > 0 && newPortTimes.length > 0)
+            : (oldPortTimes.length > 0 && newPortTimes.length > 0);
+
+        if (hasValidTimes) {
+            times[routeName] = {
+                ...times[routeName],
+                oldPort: [cleanHeader(0, table), ...oldPortTimes],
+                newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
+                midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
+                hasMiddleStop
+            };
+            console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
+        } else {
+            times[routeName] = {
+                ...times[routeName],
+                message: "No service available—check back later"
+            };
+            console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
+        }
+    }
+});
 
         console.log('Scraped routes:', Object.keys(times));
         return times;
