@@ -135,6 +135,11 @@ sections.each((index, section) => {
                     return text.match(/^\d{2}:\d{2}$/) ? text : null;
                 }).get().filter(Boolean);
         
+                // Add plain text nodes for cases like '09:10' in newPort
+                const oldPortText = $(cells[0]).contents().filter(function() {
+                    return this.nodeType === 3; // Text nodes
+                }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+        
                 let newPortCell = [];
                 let midPortCell = [];
         
@@ -154,6 +159,12 @@ sections.each((index, section) => {
                         console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
                         return text.match(/^\d{2}:\d{2}$/) ? text : null;
                     }).get().filter(Boolean);
+        
+                    // Plain text nodes for newPort
+                    const newPortText = $(cells[2]).contents().filter(function() {
+                        return this.nodeType === 3;
+                    }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+                    newPortCell = [...newPortCell, ...newPortText];
                 } else {
                     // newPortCell (second column when no middle stop)
                     newPortCell = $(cells[1]).find('p, strong').map((j, el) => {
@@ -162,10 +173,16 @@ sections.each((index, section) => {
                         console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
                         return text.match(/^\d{2}:\d{2}$/) ? text : null;
                     }).get().filter(Boolean);
+        
+                    // Plain text nodes for newPort
+                    const newPortText = $(cells[1]).contents().filter(function() {
+                        return this.nodeType === 3;
+                    }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+                    newPortCell = [...newPortCell, ...newPortText];
                 }
         
                 // Deduplicate times
-                const uniqueOldPortCell = [...new Set(oldPortCell)];
+                const uniqueOldPortCell = [...new Set([...oldPortCell, ...oldPortText])];
                 const uniqueMidPortCell = [...new Set(midPortCell)];
                 const uniqueNewPortCell = [...new Set(newPortCell)];
         
@@ -176,6 +193,9 @@ sections.each((index, section) => {
                 if (Array.isArray(uniqueNewPortCell)) uniqueNewPortCell.forEach(time => newPortTimes.push(time));
             }
         });
+        
+        // Define hasValidTimes
+        const hasValidTimes = oldPortTimes.length > 0 && newPortTimes.length > 0;
         
         // Validate and truncate array lengths
         if (hasValidTimes) {
