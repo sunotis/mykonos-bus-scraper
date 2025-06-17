@@ -123,63 +123,68 @@ sections.each((index, section) => {
         const rows = table.find('tr').slice(headers.length > 0 ? 1 : 0); // Skip header row if present
 
         // Inside the rows.each loop
-rows.each((i, row) => {
-    const cells = $(row).find('td');
-    if (cells.length >= 2) {
-        // oldPortCell (first column)
-        const oldPortCell = $(cells[0]).find('p').length
-            ? $(cells[0]).find('p, strong').map((j, el) => {
-                  const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                  return text.match(/^\d{2}:\d{2}$/) ? text : null;
-              }).get().filter(Boolean)
-            : $(cells[0]).text().trim().split(/\s+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-
-        let newPortCell = [];
-        let midPortCell = [];
-
-        if (hasMiddleStop && cells.length >= 3) {
-            // midPortCell (second column)
-            midPortCell = $(cells[1]).find('p').length
-                ? $(cells[1]).find('p, strong').map((j, el) => {
-                      const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                      console.log(`midPortCell raw text [${routeName}]:`, $(el).html());
-                      return text.split(/[\n<br>\s]+/).map(t => t.trim()).filter(t => t.match(/^\d{2}:\d{2}$/));
-                  }).get().flat().filter(Boolean)
-                : $(cells[1]).text().trim().split(/[\n\s]+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-
-            // newPortCell (third column)
-            newPortCell = $(cells[2]).find('p').length
-                ? $(cells[2]).find('p, strong').map((j, el) => {
-                      const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                      console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
-                      return text.split(/[\n<br>\s]+/).map(t => t.trim()).filter(t => t.match(/^\d{2}:\d{2}$/));
-                  }).get().flat().filter(Boolean)
-                : $(cells[2]).text().trim().split(/[\n\s]+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-        } else {
-            // newPortCell (second column when no middle stop)
-            newPortCell = $(cells[1]).find('p').length
-                ? $(cells[1]).find('p, strong').map((j, el) => {
-                      const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                      console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
-                      return text.split(/[\n<br>\s]+/).map(t => t.trim()).filter(t => t.match(/^\d{2}:\d{2}$/));
-                  }).get().flat().filter(Boolean)
-                : $(cells[1]).text().trim().split(/[\n\s]+/).filter(t => t.match(/^\d{2}:\d{2}$/));
-        }
-
-        console.log(`Row ${i} for ${routeName}: oldPortCell=${oldPortCell}, midPortCell=${midPortCell}, newPortCell=${newPortCell}`);
-
-        if (Array.isArray(oldPortCell)) oldPortCell.forEach(time => oldPortTimes.push(time));
-        if (hasMiddleStop && Array.isArray(midPortCell)) midPortCell.forEach(time => midPortTimes.push(time));
-        if (Array.isArray(newPortCell)) newPortCell.forEach(time => newPortTimes.push(time));
-    }
-});
-
-        // Relaxed check to allow empty midPortTimes
-        const hasValidTimes = hasMiddleStop
-            ? (oldPortTimes.length > 0 && newPortTimes.length > 0)
-            : (oldPortTimes.length > 0 && newPortTimes.length > 0);
-
+        rows.each((i, row) => {
+            const cells = $(row).find('td');
+            if (cells.length >= 2) {
+                // oldPortCell (first column)
+                const oldPortCell = $(cells[0]).find('p, strong').map((j, el) => {
+                    // Skip <strong> inside <p> to avoid duplicates
+                    if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                    const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                    console.log(`oldPortCell raw text [${routeName}]:`, $(el).html());
+                    return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                }).get().filter(Boolean);
+        
+                let newPortCell = [];
+                let midPortCell = [];
+        
+                if (hasMiddleStop && cells.length >= 3) {
+                    // midPortCell (second column)
+                    midPortCell = $(cells[1]).find('p, strong').map((j, el) => {
+                        if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                        const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                        console.log(`midPortCell raw text [${routeName}]:`, $(el).html());
+                        return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                    }).get().filter(Boolean);
+        
+                    // newPortCell (third column)
+                    newPortCell = $(cells[2]).find('p, strong').map((j, el) => {
+                        if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                        const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                        console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
+                        return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                    }).get().filter(Boolean);
+                } else {
+                    // newPortCell (second column when no middle stop)
+                    newPortCell = $(cells[1]).find('p, strong').map((j, el) => {
+                        if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                        const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                        console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
+                        return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                    }).get().filter(Boolean);
+                }
+        
+                // Deduplicate times
+                const uniqueOldPortCell = [...new Set(oldPortCell)];
+                const uniqueMidPortCell = [...new Set(midPortCell)];
+                const uniqueNewPortCell = [...new Set(newPortCell)];
+        
+                console.log(`Row ${i} for ${routeName}: oldPortCell=${uniqueOldPortCell}, midPortCell=${uniqueMidPortCell}, newPortCell=${uniqueNewPortCell}`);
+        
+                if (Array.isArray(uniqueOldPortCell)) uniqueOldPortCell.forEach(time => oldPortTimes.push(time));
+                if (hasMiddleStop && Array.isArray(uniqueMidPortCell)) uniqueMidPortCell.forEach(time => midPortTimes.push(time));
+                if (Array.isArray(uniqueNewPortCell)) uniqueNewPortCell.forEach(time => newPortTimes.push(time));
+            }
+        });
+        
+        // Validate and truncate array lengths
         if (hasValidTimes) {
+            if (!hasMiddleStop && oldPortTimes.length !== newPortTimes.length) {
+                console.warn(`Mismatched times for ${routeName}: oldPort=${oldPortTimes.length}, newPort=${newPortTimes.length}`);
+                const minLength = Math.min(oldPortTimes.length, newPortTimes.length);
+                oldPortTimes.length = minLength;
+                newPortTimes.length = minLength;
+            }
             times[routeName] = {
                 ...times[routeName],
                 oldPort: [cleanHeader(0, table), ...oldPortTimes],
