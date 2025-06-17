@@ -122,104 +122,119 @@ sections.each((index, section) => {
         const headers = table.find('tr:first-child td');
         const rows = table.find('tr').slice(headers.length > 0 ? 1 : 0); // Skip header row if present
 
-        // Inside the rows.each loop
-        rows.each((i, row) => {
-            const cells = $(row).find('td');
-            if (cells.length >= 2) {
-                // oldPortCell (first column)
-                const oldPortCell = $(cells[0]).find('p, strong').map((j, el) => {
-                    // Skip <strong> inside <p> to avoid duplicates
-                    if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                    const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                    console.log(`oldPortCell raw text [${routeName}]:`, $(el).html());
-                    return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                }).get().filter(Boolean);
+        // Helper function to sort times, treating 00:00-03:59 as next day
+function sortTimes(times) {
+    return times.sort((a, b) => {
+        const [hourA, minA] = a.split(':').map(Number);
+        const [hourB, minB] = b.split(':').map(Number);
         
-                // Add plain text nodes for cases like '09:10' in newPort
-                const oldPortText = $(cells[0]).contents().filter(function() {
-                    return this.nodeType === 3; // Text nodes
-                }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+        // Treat hours 0-3 as 24-27 for sorting (e.g., 00:00 -> 24:00, 00:10 -> 24:10)
+        const adjustedHourA = hourA < 4 ? hourA + 24 : hourA;
+        const adjustedHourB = hourB < 4 ? hourB + 24 : hourB;
         
-                let newPortCell = [];
-                let midPortCell = [];
-        
-                if (hasMiddleStop && cells.length >= 3) {
-                    // midPortCell (second column)
-                    midPortCell = $(cells[1]).find('p, strong').map((j, el) => {
-                        if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                        const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                        console.log(`midPortCell raw text [${routeName}]:`, $(el).html());
-                        return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                    }).get().filter(Boolean);
-        
-                    // newPortCell (third column)
-                    newPortCell = $(cells[2]).find('p, strong').map((j, el) => {
-                        if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                        const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                        console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
-                        return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                    }).get().filter(Boolean);
-        
-                    // Plain text nodes for newPort
-                    const newPortText = $(cells[2]).contents().filter(function() {
-                        return this.nodeType === 3;
-                    }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
-                    newPortCell = [...newPortCell, ...newPortText];
-                } else {
-                    // newPortCell (second column when no middle stop)
-                    newPortCell = $(cells[1]).find('p, strong').map((j, el) => {
-                        if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                        const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                        console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
-                        return text.match(/^\d{2}:\d{2}$/) ? text : null;
-                    }).get().filter(Boolean);
-        
-                    // Plain text nodes for newPort
-                    const newPortText = $(cells[1]).contents().filter(function() {
-                        return this.nodeType === 3;
-                    }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
-                    newPortCell = [...newPortCell, ...newPortText];
-                }
-        
-                // Deduplicate times
-                const uniqueOldPortCell = [...new Set([...oldPortCell, ...oldPortText])];
-                const uniqueMidPortCell = [...new Set(midPortCell)];
-                const uniqueNewPortCell = [...new Set(newPortCell)];
-        
-                console.log(`Row ${i} for ${routeName}: oldPortCell=${uniqueOldPortCell}, midPortCell=${uniqueMidPortCell}, newPortCell=${uniqueNewPortCell}`);
-        
-                if (Array.isArray(uniqueOldPortCell)) uniqueOldPortCell.forEach(time => oldPortTimes.push(time));
-                if (hasMiddleStop && Array.isArray(uniqueMidPortCell)) uniqueMidPortCell.forEach(time => midPortTimes.push(time));
-                if (Array.isArray(uniqueNewPortCell)) uniqueNewPortCell.forEach(time => newPortTimes.push(time));
-            }
-        });
-        
-        // Define hasValidTimes
-        const hasValidTimes = oldPortTimes.length > 0 && newPortTimes.length > 0;
-        
-        // Validate and truncate array lengths
-        if (hasValidTimes) {
-            if (!hasMiddleStop && oldPortTimes.length !== newPortTimes.length) {
-                console.warn(`Mismatched times for ${routeName}: oldPort=${oldPortTimes.length}, newPort=${newPortTimes.length}`);
-                const minLength = Math.min(oldPortTimes.length, newPortTimes.length);
-                oldPortTimes.length = minLength;
-                newPortTimes.length = minLength;
-            }
-            times[routeName] = {
-                ...times[routeName],
-                oldPort: [cleanHeader(0, table), ...oldPortTimes],
-                newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
-                midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
-                hasMiddleStop
-            };
-            console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
+        if (adjustedHourA !== adjustedHourB) return adjustedHourA - adjustedHourB;
+        return minA - minB;
+    });
+}
+
+// Inside the rows.each loop
+rows.each((i, row) => {
+    const cells = $(row).find('td');
+    if (cells.length >= 2) {
+        // oldPortCell (first column)
+        const oldPortCell = $(cells[0]).find('p, strong').map((j, el) => {
+            // Skip <strong> inside <p> to avoid duplicates
+            if ($(el).is('strong') && $(el).parent().is('p')) return null;
+            const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+            console.log(`oldPortCell raw text [${routeName}]:`, $(el).html());
+            return text.match(/^\d{2}:\d{2}$/) ? text : null;
+        }).get().filter(Boolean);
+
+        // Add plain text nodes for cases like '09:10' in newPort
+        const oldPortText = $(cells[0]).contents().filter(function() {
+            return this.nodeType === 3; // Text nodes
+        }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+
+        let newPortCell = [];
+        let midPortCell = [];
+
+        if (hasMiddleStop && cells.length >= 3) {
+            // midPortCell (second column)
+            midPortCell = $(cells[1]).find('p, strong').map((j, el) => {
+                if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                console.log(`midPortCell raw text [${routeName}]:`, $(el).html());
+                return text.match(/^\d{2}:\d{2}$/) ? text : null;
+            }).get().filter(Boolean);
+
+            // newPortCell (third column)
+            newPortCell = $(cells[2]).find('p, strong').map((j, el) => {
+                if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
+                return text.match(/^\d{2}:\d{2}$/) ? text : null;
+            }).get().filter(Boolean);
+
+            // Plain text nodes for newPort
+            const newPortText = $(cells[2]).contents().filter(function() {
+                return this.nodeType === 3;
+            }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+            newPortCell = [...newPortCell, ...newPortText];
         } else {
-            times[routeName] = {
-                ...times[routeName],
-                message: "No service available—check back later"
-            };
-            console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
+            // newPortCell (second column when no middle stop)
+            newPortCell = $(cells[1]).find('p, strong').map((j, el) => {
+                if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
+                return text.match(/^\d{2}:\d{2}$/) ? text : null;
+            }).get().filter(Boolean);
+
+            // Plain text nodes for newPort
+            const newPortText = $(cells[1]).contents().filter(function() {
+                return this.nodeType === 3;
+            }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+            newPortCell = [...newPortCell, ...newPortText];
         }
+
+        // Deduplicate and sort times
+        const uniqueOldPortCell = sortTimes([...new Set([...oldPortCell, ...oldPortText])]);
+        const uniqueMidPortCell = sortTimes([...new Set(midPortCell)]);
+        const uniqueNewPortCell = sortTimes([...new Set(newPortCell)]);
+
+        console.log(`Row ${i} for ${routeName}: oldPortCell=${uniqueOldPortCell}, midPortCell=${uniqueMidPortCell}, newPortCell=${uniqueNewPortCell}`);
+
+        if (Array.isArray(uniqueOldPortCell)) uniqueOldPortCell.forEach(time => oldPortTimes.push(time));
+        if (hasMiddleStop && Array.isArray(uniqueMidPortCell)) uniqueMidPortCell.forEach(time => midPortTimes.push(time));
+        if (Array.isArray(uniqueNewPortCell)) uniqueNewPortCell.forEach(time => newPortTimes.push(time));
+    }
+});
+
+// Define hasValidTimes
+const hasValidTimes = oldPortTimes.length > 0 && newPortTimes.length > 0;
+
+// Validate and truncate array lengths
+if (hasValidTimes) {
+    if (!hasMiddleStop && oldPortTimes.length !== newPortTimes.length) {
+        console.warn(`Mismatched times for ${routeName}: oldPort=${oldPortTimes.length}, newPort=${newPortTimes.length}`);
+        const minLength = Math.min(oldPortTimes.length, newPortTimes.length);
+        oldPortTimes.length = minLength;
+        newPortTimes.length = minLength;
+    }
+    times[routeName] = {
+        ...times[routeName],
+        oldPort: [cleanHeader(0, table), ...oldPortTimes],
+        newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
+        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
+        hasMiddleStop
+    };
+    console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
+} else {
+    times[routeName] = {
+        ...times[routeName],
+        message: "No service available—check back later"
+    };
+    console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
+}
     }
 });
 
