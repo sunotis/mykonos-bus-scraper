@@ -3,6 +3,7 @@ const chromium = require('@sparticuz/chromium');
 const cheerio = require('cheerio');
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -14,8 +15,20 @@ app.use(cors({
     credentials: false
 }));
 
-// Custom delay function
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+// Rate limiting to prevent request spikes
+app.use(rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Max 100 requests per IP
+    message: 'Too many requests, please try again later.'
+}));
+
+// Cache setup
+let cachedTimetables = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// Browser instance
+let browser = null;
 
 // Clean header function
 function cleanHeader(index, table) {
@@ -57,23 +70,38 @@ const imageMapping = {
 
 const url = 'https://mykonosbus.com/bus-timetables/';
 
-async function scrapeTimetables() {
-    let browser;
-    let times = {}; // Initialize times
-    try {
+async function getBrowser() {
+    if (!browser) {
         console.log('Launching browser...');
         browser = await puppeteer.launch({
             executablePath: await chromium.executablePath(),
             headless: chromium.headless,
-            args: chromium.args
+            args: [
+                ...chromium.args,
+                '--no-sandbox',
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+                '--disable-extensions',
+                '--blink-settings=imagesEnabled=false'
+            ]
         });
-        const page = await browser.newPage();
+    }
+    return browser;
+}
+
+async function scrapeTimetables() {
+    let page;
+    let times = {};
+    try {
+        console.log('Starting scrape...');
+        const browser = await getBrowser();
+        page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
         console.log('Navigating to URL:', url);
         await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
         console.log('Waiting for content...');
-        await delay(30000); // 30s for static content
+        await page.waitForSelector('div.vc_tta-panel:has(table.aligncenter)', { timeout: 10000 });
 
         const content = await page.content();
         console.log('Page HTML length:', content.length);
@@ -81,7 +109,7 @@ async function scrapeTimetables() {
             console.error('Page content too short, likely failed to load');
             throw new Error('Page load incomplete');
         }
-        const $ = cheerio.load(content);
+        const $ = cheerio.load(content, { xmlMode: false, decodeEntities: true });
 
         for (const [route, lineId] of Object.entries(lineIdMapping)) {
             times[route] = {
@@ -90,171 +118,148 @@ async function scrapeTimetables() {
             };
         }
 
-        const sections = $('div.vc_tta-panel');
+        const sections = $('div.vc_tta-panel:has(table.aligncenter)');
         console.log('Found sections:', sections.length);
 
-        // Inside the sections.each loop
-sections.each((index, section) => {
-    const lineId = $(section).attr('id');
-    const routeName = Object.keys(lineIdMapping).find(route => lineIdMapping[route] === lineId);
-    if (!routeName) {
-        console.log(`No route for lineId: ${lineId}`);
-        return;
-    }
+        sections.each((index, section) => {
+            const lineId = $(section).attr('id');
+            const routeName = Object.keys(lineIdMapping).find(route => lineIdMapping[route] === lineId);
+            if (!routeName) {
+                console.log(`No route for lineId: ${lineId}`);
+                return;
+            }
 
-    console.log(`Processing ${routeName} (ID: ${lineId})`);
-    let table = $(section).find('table.aligncenter').first();
-    if (!table.length) {
-        table = $(section).find('table').first();
-        console.log(`Used fallback table selector for ${routeName}`);
-    }
+            console.log(`Processing ${routeName} (ID: ${lineId})`);
+            let table = $(section).find('table.aligncenter').first();
+            if (!table.length) {
+                table = $(section).find('table').first();
+                console.log(`Used fallback table selector for ${routeName}`);
+            }
 
-    if (table.length) {
-        const oldPortTimes = [];
-        const newPortTimes = [];
-        const midPortTimes = [];
-        // Determine hasMiddleStop based on tbody row columns
-        const firstRow = table.find('tbody tr').first();
-        const numColumns = firstRow.find('td').length;
-        let hasMiddleStop = numColumns >= 3;
-        console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, columns: ${numColumns}`);
+            if (table.length) {
+                const oldPortTimes = [];
+                const newPortTimes = [];
+                const midPortTimes = [];
+                const firstRow = table.find('tbody tr').first();
+                const numColumns = firstRow.find('td').length;
+                let hasMiddleStop = numColumns >= 3;
+                console.log(`${routeName} hasMiddleStop: ${hasMiddleStop}, columns: ${numColumns}`);
 
-        const headers = table.find('tr:first-child td');
-        const rows = table.find('tr').slice(headers.length > 0 ? 1 : 0); // Skip header row if present
+                const headers = table.find('tr:first-child td');
+                const rows = table.find('tr').slice(headers.length > 0 ? 1 : 0);
 
-        // Helper function to sort times, treating 00:00-03:59 as next day
-function sortTimes(times) {
-    return times.sort((a, b) => {
-        const [hourA, minA] = a.split(':').map(Number);
-        const [hourB, minB] = b.split(':').map(Number);
-        
-        // Treat hours 0-3 as 24-27 for sorting (e.g., 00:00 -> 24:00, 00:10 -> 24:10)
-        const adjustedHourA = hourA < 4 ? hourA + 24 : hourA;
-        const adjustedHourB = hourB < 4 ? hourB + 24 : hourB;
-        
-        if (adjustedHourA !== adjustedHourB) return adjustedHourA - adjustedHourB;
-        return minA - minB;
-    });
-}
+                function sortTimes(times) {
+                    return times.sort((a, b) => {
+                        const [hourA, minA] = a.split(':').map(Number);
+                        const [hourB, minB] = b.split(':').map(Number);
+                        const adjustedHourA = hourA < 4 ? hourA + 24 : hourA;
+                        const adjustedHourB = hourB < 4 ? hourB + 24 : hourB;
+                        if (adjustedHourA !== adjustedHourB) return adjustedHourA - adjustedHourB;
+                        return minA - minB;
+                    });
+                }
 
-// Inside the rows.each loop
-rows.each((i, row) => {
-    const cells = $(row).find('td');
-    if (cells.length >= 2) {
-        // oldPortCell (first column)
-        const oldPortCell = $(cells[0]).find('p, strong').map((j, el) => {
-            // Skip <strong> inside <p> to avoid duplicates
-            if ($(el).is('strong') && $(el).parent().is('p')) return null;
-            const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-            console.log(`oldPortCell raw text [${routeName}]:`, $(el).html());
-            return text.match(/^\d{2}:\d{2}$/) ? text : null;
-        }).get().filter(Boolean);
+                rows.each((i, row) => {
+                    const cells = $(row).find('td');
+                    if (cells.length >= 2) {
+                        const oldPortCell = $(cells[0]).find('p, strong').map((j, el) => {
+                            if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                            const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                            console.log(`oldPortCell raw text [${routeName}]:`, $(el).html());
+                            return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                        }).get().filter(Boolean);
 
-        // Add plain text nodes for cases like '09:10' in newPort
-        const oldPortText = $(cells[0]).contents().filter(function() {
-            return this.nodeType === 3; // Text nodes
-        }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+                        const oldPortText = $(cells[0]).contents().filter(function() {
+                            return this.nodeType === 3;
+                        }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
 
-        let newPortCell = [];
-        let midPortCell = [];
+                        let newPortCell = [];
+                        let midPortCell = [];
 
-        if (hasMiddleStop && cells.length >= 3) {
-            // midPortCell (second column)
-            midPortCell = $(cells[1]).find('p, strong').map((j, el) => {
-                if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                console.log(`midPortCell raw text [${routeName}]:`, $(el).html());
-                return text.match(/^\d{2}:\d{2}$/) ? text : null;
-            }).get().filter(Boolean);
+                        if (hasMiddleStop && cells.length >= 3) {
+                            midPortCell = $(cells[1]).find('p, strong').map((j, el) => {
+                                if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                                console.log(`midPortCell raw text [${routeName}]:`, $(el).html());
+                                return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                            }).get().filter(Boolean);
 
-            // newPortCell (third column)
-            newPortCell = $(cells[2]).find('p, strong').map((j, el) => {
-                if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
-                return text.match(/^\d{2}:\d{2}$/) ? text : null;
-            }).get().filter(Boolean);
+                            newPortCell = $(cells[2]).find('p, strong').map((j, el) => {
+                                if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                                console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
+                                return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                            }).get().filter(Boolean);
 
-            // Plain text nodes for newPort
-            const newPortText = $(cells[2]).contents().filter(function() {
-                return this.nodeType === 3;
-            }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
-            newPortCell = [...newPortCell, ...newPortText];
-        } else {
-            // newPortCell (second column when no middle stop)
-            newPortCell = $(cells[1]).find('p, strong').map((j, el) => {
-                if ($(el).is('strong') && $(el).parent().is('p')) return null;
-                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
-                console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
-                return text.match(/^\d{2}:\d{2}$/) ? text : null;
-            }).get().filter(Boolean);
+                            const newPortText = $(cells[2]).contents().filter(function() {
+                                return this.nodeType === 3;
+                            }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+                            newPortCell = [...newPortCell, ...newPortText];
+                        } else {
+                            newPortCell = $(cells[1]).find('p, strong').map((j, el) => {
+                                if ($(el).is('strong') && $(el).parent().is('p')) return null;
+                                const text = $(el).is('strong') ? $(el).text().trim() : $(el).find('strong').length ? $(el).find('strong').text().trim() : $(el).text().trim();
+                                console.log(`newPortCell raw text [${routeName}]:`, $(el).html());
+                                return text.match(/^\d{2}:\d{2}$/) ? text : null;
+                            }).get().filter(Boolean);
 
-            // Plain text nodes for newPort
-            const newPortText = $(cells[1]).contents().filter(function() {
-                return this.nodeType === 3;
-            }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
-            newPortCell = [...newPortCell, ...newPortText];
-        }
+                            const newPortText = $(cells[1]).contents().filter(function() {
+                                return this.nodeType === 3;
+                            }).map((j, el) => $(el).text().trim()).get().filter(t => t.match(/^\d{2}:\d{2}$/));
+                            newPortCell = [...newPortCell, ...newPortText];
+                        }
 
-        // Deduplicate and sort times
-        const uniqueOldPortCell = sortTimes([...new Set([...oldPortCell, ...oldPortText])]);
-        const uniqueMidPortCell = sortTimes([...new Set(midPortCell)]);
-        const uniqueNewPortCell = sortTimes([...new Set(newPortCell)]);
+                        const uniqueOldPortCell = sortTimes([...new Set([...oldPortCell, ...oldPortText])]);
+                        const uniqueMidPortCell = sortTimes([...new Set(midPortCell)]);
+                        const uniqueNewPortCell = sortTimes([...new Set(newPortCell)]);
 
-        console.log(`Row ${i} for ${routeName}: oldPortCell=${uniqueOldPortCell}, midPortCell=${uniqueMidPortCell}, newPortCell=${uniqueNewPortCell}`);
+                        console.log(`Row ${i} for ${routeName}: oldPortCell=${uniqueOldPortCell}, midPortCell=${uniqueMidPortCell}, newPortCell=${uniqueNewPortCell}`);
 
-        if (Array.isArray(uniqueOldPortCell)) uniqueOldPortCell.forEach(time => oldPortTimes.push(time));
-        if (hasMiddleStop && Array.isArray(uniqueMidPortCell)) uniqueMidPortCell.forEach(time => midPortTimes.push(time));
-        if (Array.isArray(uniqueNewPortCell)) uniqueNewPortCell.forEach(time => newPortTimes.push(time));
-    }
-});
+                        if (Array.isArray(uniqueOldPortCell)) uniqueOldPortCell.forEach(time => oldPortTimes.push(time));
+                        if (hasMiddleStop && Array.isArray(uniqueMidPortCell)) uniqueMidPortCell.forEach(time => midPortTimes.push(time));
+                        if (Array.isArray(uniqueNewPortCell)) uniqueNewPortCell.forEach(time => newPortTimes.push(time));
+                    }
+                });
 
-// Define hasValidTimes
-const hasValidTimes = oldPortTimes.length > 0 && newPortTimes.length > 0;
+                const hasValidTimes = oldPortTimes.length > 0 && newPortTimes.length > 0;
 
-// Validate and truncate array lengths
-if (hasValidTimes) {
-    if (!hasMiddleStop && oldPortTimes.length !== newPortTimes.length) {
-        console.warn(`Mismatched times for ${routeName}: oldPort=${oldPortTimes.length}, newPort=${newPortTimes.length}`);
-        const minLength = Math.min(oldPortTimes.length, newPortTimes.length);
-        oldPortTimes.length = minLength;
-        newPortTimes.length = minLength;
-    }
-    times[routeName] = {
-        ...times[routeName],
-        oldPort: [cleanHeader(0, table), ...oldPortTimes],
-        newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
-        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
-        hasMiddleStop
-    };
-    console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
-} else {
-    times[routeName] = {
-        ...times[routeName],
-        message: "No service available—check back later"
-    };
-    console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
-}
-    }
-});
+                if (hasValidTimes) {
+                    if (!hasMiddleStop && oldPortTimes.length !== newPortTimes.length) {
+                        console.warn(`Mismatched times for ${routeName}: oldPort=${oldPortTimes.length}, newPort=${newPortTimes.length}`);
+                        const minLength = Math.min(oldPortTimes.length, newPortTimes.length);
+                        oldPortTimes.length = minLength;
+                        newPortTimes.length = minLength;
+                    }
+                    times[routeName] = {
+                        ...times[routeName],
+                        oldPort: [cleanHeader(0, table), ...oldPortTimes],
+                        newPort: [cleanHeader(hasMiddleStop ? 2 : 1, table), ...newPortTimes],
+                        midPort: hasMiddleStop && midPortTimes.length > 0 ? [cleanHeader(1, table), ...midPortTimes] : undefined,
+                        hasMiddleStop
+                    };
+                    console.log(`${routeName} times:`, JSON.stringify(times[routeName], null, 2));
+                } else {
+                    times[routeName] = {
+                        ...times[routeName],
+                        message: "No service available—check back later"
+                    };
+                    console.log(`${routeName} no times found: oldPortTimes=${oldPortTimes}, newPortTimes=${newPortTimes}, midPortTimes=${midPortTimes}`);
+                }
+            }
+        });
 
         console.log('Scraped routes:', Object.keys(times));
         return times;
     } catch (error) {
         console.error('Scrape error:', error.message);
-        return times; // Return partial results
+        return times;
     } finally {
-        if (browser) {
-            console.log('Closing browser...');
-            await browser.close();
+        if (page) {
+            console.log('Closing page...');
+            await page.close();
         }
     }
 }
-
-// Cache the scraped data with a timestamp
-let cachedTimetables = null;
-let cacheTimestamp = null;
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
 app.get('/', (req, res) => {
     console.log('Root route hit');
@@ -262,10 +267,9 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/timetables', async (req, res) => {
-    console.log('API /api/timetables requested');
+    console.log('API /api/timetables requested, Memory usage:', process.memoryUsage());
     try {
         const now = Date.now();
-        // Use cached data if available and not older than CACHE_DURATION
         if (cachedTimetables && cacheTimestamp && (now - cacheTimestamp < CACHE_DURATION)) {
             console.log('Returning cached timetables');
             return res.json(cachedTimetables);
@@ -284,8 +288,11 @@ app.get('/api/timetables', async (req, res) => {
 
 app.get('/api/refresh', async (req, res) => {
     console.log('API /api/refresh requested');
+    if (req.query.secret !== process.env.REFRESH_SECRET) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
     try {
-        cachedTimetables = null; // Clear cache
+        cachedTimetables = null;
         cacheTimestamp = null;
         cachedTimetables = await scrapeTimetables();
         cacheTimestamp = Date.now();
@@ -297,5 +304,24 @@ app.get('/api/refresh', async (req, res) => {
     }
 });
 
+// Preload cache on startup
 const port = process.env.PORT || 10000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+app.listen(port, async () => {
+    console.log(`Server running on port ${port}`);
+    try {
+        cachedTimetables = await scrapeTimetables();
+        cacheTimestamp = Date.now();
+        console.log('Cache preloaded with timetables');
+    } catch (error) {
+        console.error('Error preloading cache:', error.message);
+    }
+});
+
+// Cleanup browser on process exit
+process.on('SIGTERM', async () => {
+    if (browser) {
+        console.log('Closing browser on SIGTERM');
+        await browser.close();
+    }
+    process.exit(0);
+});
