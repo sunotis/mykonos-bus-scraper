@@ -36,6 +36,9 @@ function cleanHeader(index, table) {
     return headers.eq(index).text().trim() || `Column ${index}`;
 }
 
+// Custom delay function (restored from original)
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const lineIdMapping = {
     "fabrika (mykonos town) - airport": "1559047590770-061945df-35ac",
     "airport - new port": "1559047898109-40e76be5-801f",
@@ -101,7 +104,7 @@ async function scrapeTimetables() {
         await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
         console.log('Waiting for content...');
-        await page.waitForSelector('div.vc_tta-panel:has(table.aligncenter)', { timeout: 10000 });
+        await delay(10000); // Reduced from 30s to 10s for memory efficiency
 
         const content = await page.content();
         console.log('Page HTML length:', content.length);
@@ -118,7 +121,7 @@ async function scrapeTimetables() {
             };
         }
 
-        const sections = $('div.vc_tta-panel:has(table.aligncenter)');
+        const sections = $('div.vc_tta-panel');
         console.log('Found sections:', sections.length);
 
         sections.each((index, section) => {
@@ -161,6 +164,7 @@ async function scrapeTimetables() {
 
                 rows.each((i, row) => {
                     const cells = $(row).find('td');
+                    console.log(`Row ${i} for ${routeName}: cells.length=${cells.length}, HTML=${$(row).html()}`);
                     if (cells.length >= 2) {
                         const oldPortCell = $(cells[0]).find('p, strong').map((j, el) => {
                             if ($(el).is('strong') && $(el).parent().is('p')) return null;
@@ -222,6 +226,7 @@ async function scrapeTimetables() {
                 });
 
                 const hasValidTimes = oldPortTimes.length > 0 && newPortTimes.length > 0;
+                console.log(`hasValidTimes for ${routeName}: oldPortTimes=${oldPortTimes.length}, newPortTimes=${newPortTimes.length}, midPortTimes=${midPortTimes.length}`);
 
                 if (hasValidTimes) {
                     if (!hasMiddleStop && oldPortTimes.length !== newPortTimes.length) {
